@@ -485,6 +485,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
       </div>
       <div id="syncPhotoPickerRow" style="margin-top:0.4rem">
         <button type="button" class="crop-change-btn" id="syncPhotoPickerBtn" title="Click, then click anywhere on the photo above (Pan &amp; Zoom or Sync Photo Zoom) to sample a color">💧 Pick Color from Photo</button>
+        <button type="button" class="crop-change-btn" id="syncPhotoBoxBtn" style="margin-top:0.35rem" title="Tap, then drag a rectangle over part of the photo (like lettering) to re-read that whole area at once">▭ Pick a Box from Photo</button>
         <div class="small-note" id="syncPhotoPickResult" style="margin-top:0.35rem"></div>
         <div id="syncPhotoPickActions"></div>
       </div>
@@ -745,7 +746,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11b</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11c</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -1315,6 +1316,17 @@ function findClosestDMCUnrestricted(r,g,b){
 // came from. Point outside the cropped/generated region → no cell.
 let lastSyncedPhotoRegion=null;
 
+// The fraction of the source photo that the whole generated grid covers.
+function getWholeGridImageFraction(){
+  if(!genCropSnapshot||!sourceImage) return null;
+  const CW=genCropSnapshot.baseCW,CH=genCropSnapshot.baseCH;
+  const imgRatio=sourceImage.width/sourceImage.height, canRatio=CW/CH;
+  let baseW,baseH;
+  if(imgRatio>canRatio){baseH=CH;baseW=CH*imgRatio;} else {baseW=CW;baseH=CW/imgRatio;}
+  const drawW=baseW*genCropSnapshot.zoom,drawH=baseH*genCropSnapshot.zoom;
+  const dx=(CW-drawW)/2+genCropSnapshot.panX, dy=(CH-drawH)/2+genCropSnapshot.panY;
+  return {x:-dx/drawW, y:-dy/drawH, w:CW/drawW, h:CH/drawH};
+}
 function photoCanvasClickToImageFraction(cv,px,py){
   if(cv.id==='syncPhotoCanvas'){
     if(!lastSyncedPhotoRegion) return null;
@@ -2571,6 +2583,7 @@ function renderPreview(targetCtx,targetCellPx){
 generateBtn.addEventListener('click',generate);
 
 function generate(){
+  scatterCells=new Set();
   if(!sourceImage) return;
   selectedCells.clear();
   hiddenColorCells={};
@@ -4474,12 +4487,18 @@ document.getElementById('syncPhotoZoomBtn')?.addEventListener('click',()=>{
 // colors), plus separately the closest match from the FULL catalog. Purely
 // informational — it doesn't change anything on the canvas.
 let syncPhotoPickerActive=false;
+let boxPickActive=false;
+// Cells the desktop version marked as "scatter" (blanked). The iPad version can't
+// edit them, but the box tool leaves them alone, and saving keeps them.
+let scatterCells=new Set();
+// The iPad version has no Crop Pattern, so the photo always lines up with the pattern.
+let cropPatternAppliedSinceGenerate=false;
 const PHOTO_PICKER_CANVAS_IDS=['cropCanvas','syncPhotoCanvas'];
 
 function applySyncPhotoPickerCursor(){
   PHOTO_PICKER_CANVAS_IDS.forEach(id=>{
     const cv=document.getElementById(id);
-    if(cv) cv.style.cursor=syncPhotoPickerActive?'crosshair':(id==='cropCanvas'?'grab':'default');
+    if(cv) cv.style.cursor=(syncPhotoPickerActive||boxPickActive)?'crosshair':(id==='cropCanvas'?'grab':'default');
   });
 }
 function setSyncPhotoPickerActive(active){
@@ -4594,6 +4613,165 @@ function sampleColorFromCanvasClick(e){
 PHOTO_PICKER_CANVAS_IDS.forEach(id=>{
   document.getElementById(id)?.addEventListener('click',sampleColorFromCanvasClick,true);
 });
+
+// ── PICK A BOX FROM PHOTO ─────────────────────────────────────────────────────
+// Drag a rectangle over part of the photo (lettering, a logo, a small detail)
+// and re-read that whole area at once, instead of clicking one drill at a time.
+// Two ways to do it: use only the colors already in your key, or also add the
+// main colors found inside the box. "Crisp" snaps each drill to the stroke
+// color or the background color (whichever covers more of it) instead of
+// averaging them, so thin lines like letters don't wash out to gray.
+let boxDrag=null, boxState=null;
+function boxOverlayEl(){
+  let el=document.getElementById('boxPickOverlay');
+  if(!el){ el=document.createElement('div'); el.id='boxPickOverlay'; el.style.cssText='position:fixed;border:2px dashed #ff1744;background:rgba(255,23,68,0.12);pointer-events:none;z-index:9999;display:none'; document.body.appendChild(el); }
+  return el;
+}
+function setBoxPickActive(on){
+  boxPickActive=on;
+  const btn=document.getElementById('syncPhotoBoxBtn'); if(btn){ btn.classList.toggle('active',on); btn.textContent=on?'▭ Box mode ON — tap to turn off (Esc)':'▭ Pick a Box from Photo'; }
+  if(on&&syncPhotoPickerActive) setSyncPhotoPickerActive(false);
+  PHOTO_PICKER_CANVAS_IDS.forEach(id=>{ const cv=document.getElementById(id); if(cv){ cv.style.touchAction=on?'none':''; } });
+  applySyncPhotoPickerCursor();
+  if(!on){ boxState=null; boxDrag=null; boxOverlayEl().style.display='none'; const a=document.getElementById('syncPhotoPickActions'); if(a) a.innerHTML=''; const r=document.getElementById('syncPhotoPickResult'); if(r) r.innerHTML=''; }
+  else { const r=document.getElementById('syncPhotoPickResult'); if(r) r.textContent='Box mode is on: drag a rectangle over the part of the photo you want to re-read. (The photo can\'t be panned while this is on.)'; }
+}
+document.getElementById('syncPhotoBoxBtn')?.addEventListener('click',()=>setBoxPickActive(!boxPickActive));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&boxPickActive){ if(boxDrag){ boxDrag=null; boxOverlayEl().style.display='none'; } else setBoxPickActive(false); } });
+function boxPickIsPhotoTarget(e){ return boxPickActive&&e.target&&PHOTO_PICKER_CANVAS_IDS.includes(e.target.id); }
+document.addEventListener('pointerdown',e=>{
+  if(!boxPickIsPhotoTarget(e)||(e.button!==undefined&&e.button!==0)) return;
+  e.preventDefault(); e.stopPropagation();
+  if(boxDrag) return; // a second finger shouldn't restart the box
+  boxDrag={cv:e.target,x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY,id:e.pointerId};
+},true);
+['mousedown','touchstart'].forEach(t=>document.addEventListener(t,e=>{ if(boxPickIsPhotoTarget(e)){ e.preventDefault(); e.stopPropagation(); } },{capture:true,passive:false}));
+document.addEventListener('pointermove',e=>{
+  if(!boxDrag||e.pointerId!==boxDrag.id) return;
+  boxDrag.x1=e.clientX; boxDrag.y1=e.clientY;
+  const el=boxOverlayEl(),x=Math.min(boxDrag.x0,boxDrag.x1),y=Math.min(boxDrag.y0,boxDrag.y1);
+  el.style.display='block'; el.style.left=x+'px'; el.style.top=y+'px'; el.style.width=Math.abs(boxDrag.x1-boxDrag.x0)+'px'; el.style.height=Math.abs(boxDrag.y1-boxDrag.y0)+'px';
+});
+function boxPickFinish(e){
+  if(!boxDrag||e.pointerId!==boxDrag.id) return;
+  const d=boxDrag; boxDrag=null; boxOverlayEl().style.display='none';
+  if(e.type==='pointercancel') return;
+  boxFromDrag(d.cv,d.x0,d.y0,e.clientX,e.clientY);
+}
+document.addEventListener('pointerup',boxPickFinish);
+document.addEventListener('pointercancel',boxPickFinish);
+
+function boxFromDrag(cv,cx0,cy0,cx1,cy1){
+  const result=document.getElementById('syncPhotoPickResult'), actions=document.getElementById('syncPhotoPickActions');
+  const rect=cv.getBoundingClientRect(), scX=cv.width/rect.width, scY=cv.height/rect.height;
+  if(Math.abs(cx1-cx0)<6||Math.abs(cy1-cy0)<6){ result.textContent='That box is too small. Drag a bigger rectangle.'; return; }
+  const f0=photoCanvasClickToImageFraction(cv,(cx0-rect.left)*scX,(cy0-rect.top)*scY);
+  const f1=photoCanvasClickToImageFraction(cv,(cx1-rect.left)*scX,(cy1-rect.top)*scY);
+  const whole=getWholeGridImageFraction();
+  if(cropPatternAppliedSinceGenerate){ boxState=null; actions.innerHTML=''; result.textContent='This pattern was cropped after it was generated, so the photo no longer lines up with it. Generate again, then use the box.'; return; }
+  if(!f0||!f1||!whole||!gridW||!indices.length){ boxState=null; actions.innerHTML=''; result.textContent='Generate a canvas first, then drag a box on the photo.'; return; }
+  const gx=[f0.fx,f1.fx].map(v=>(v-whole.x)/whole.w).sort((a,b)=>a-b), gy=[f0.fy,f1.fy].map(v=>(v-whole.y)/whole.h).sort((a,b)=>a-b);
+  if(gx[1]<=0||gx[0]>=1||gy[1]<=0||gy[0]>=1){ boxState=null; actions.innerHTML=''; result.textContent='That box is outside the generated area.'; return; }
+  const c0=Math.max(0,Math.floor(gx[0]*gridW)), c1=Math.min(gridW-1,Math.ceil(gx[1]*gridW)-1);
+  const r0=Math.max(0,Math.floor(gy[0]*gridH)), r1=Math.min(gridH-1,Math.ceil(gy[1]*gridH)-1);
+  boxState={r0,r1,c0,c1}; renderBoxPanel();
+}
+
+// Reads the photo for every drill in the box. Returns one [r,g,b] per drill, row by row.
+function sampleBoxFromPhoto(b,crisp){
+  const whole=getWholeGridImageFraction(), iw=sourceImage.width, ih=sourceImage.height;
+  const cols=b.c1-b.c0+1, rows=b.r1-b.r0+1;
+  const cellX=c=>(whole.x+c/gridW*whole.w)*iw, cellY=r=>(whole.y+r/gridH*whole.h)*ih;
+  const bx=Math.max(0,Math.floor(cellX(b.c0))), by=Math.max(0,Math.floor(cellY(b.r0)));
+  const bx1=Math.min(iw,Math.ceil(cellX(b.c1+1))), by1=Math.min(ih,Math.ceil(cellY(b.r1+1)));
+  const bw=bx1-bx, bh=by1-by;
+  if(bw<=0||bh<=0) return Array.from({length:cols*rows},()=>[255,255,255]);
+  const cv=document.createElement('canvas'); cv.width=bw; cv.height=bh; const cx=cv.getContext('2d');
+  cx.drawImage(sourceImage,bx,by,bw,bh,0,0,bw,bh);
+  const data=cx.getImageData(0,0,bw,bh).data, cells=[];
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    let xs=Math.floor(cellX(b.c0+c)-bx), xe=Math.ceil(cellX(b.c0+c+1)-bx), ys=Math.floor(cellY(b.r0+r)-by), ye=Math.ceil(cellY(b.r0+r+1)-by);
+    xs=Math.max(0,Math.min(bw-1,xs)); ys=Math.max(0,Math.min(bh-1,ys)); xe=Math.max(xs+1,Math.min(bw,xe)); ye=Math.max(ys+1,Math.min(bh,ye));
+    const px=[]; for(let y=ys;y<ye;y++)for(let x=xs;x<xe;x++){ const k=(y*bw+x)*4; px.push([data[k],data[k+1],data[k+2]]); }
+    cells.push(px);
+  }
+  const mean=list=>{ let r=0,g=0,bl=0; list.forEach(p=>{r+=p[0];g+=p[1];bl+=p[2];}); const n=list.length||1; return [r/n,g/n,bl/n]; };
+  const avgs=cells.map(mean);
+  if(!crisp) return avgs;
+  const med=ch=>{ const v=avgs.map(a=>a[ch]).sort((x,y)=>x-y); return v[Math.floor(v.length/2)]; };
+  const bg=[med(0),med(1),med(2)];
+  return cells.map((list,i)=>{
+    const ds=list.map(p=>colorDist(p,bg)); const maxD=Math.sqrt(Math.max(...ds));
+    if(maxD<40) return avgs[i];
+    const thr=(maxD*0.5)*(maxD*0.5), feat=[], rest=[];
+    list.forEach((p,j)=>(ds[j]>=thr?feat:rest).push(p));
+    return (feat.length/list.length>=0.34)?mean(feat):(rest.length?mean(rest):avgs[i]);
+  });
+}
+
+// Decides what each drill in the box should become.
+function planBoxPick(b,mode,crisp,nNew){
+  const S=sampleBoxFromPhoto(b,crisp), counts=getCurrentCounts();
+  const cands=[]; palette.forEach((pc,i)=>{ if(hiddenColors.has(i)||(counts&&counts[i]<=0)) return; cands.push({entry:dmcMatches[i],rgb:pc}); });
+  const added=[];
+  if(mode==='add'&&S.length){
+    const centers=kMeans(S,Math.max(2,Math.min(S.length,nNew+2)),12);
+    centers.forEach(ct=>{
+      if(added.length>=nNew) return;
+      const entry=findClosestDMCUnrestricted(ct[0],ct[1],ct[2]), rgb=hexToRgb(entry.hex);
+      if(cands.some(c=>c.entry.code===entry.code&&(c.entry.catalogType||undefined)===(entry.catalogType||undefined))) return;
+      if(cands.some(c=>colorDist(c.rgb,rgb)<=60*60)) return; // an existing key color already covers it
+      const cand={entry,rgb,isNew:true}; cands.push(cand); added.push(cand);
+    });
+  }
+  if(!cands.length) return {cells:[],added,empty:true};
+  const out=S.map(px=>{ let best=cands[0],bd=Infinity; cands.forEach(c=>{ const d=colorDist(px,c.rgb); if(d<bd){bd=d;best=c;} }); return best; });
+  return {cells:out,added};
+}
+
+function renderBoxPanel(){
+  const actions=document.getElementById('syncPhotoPickActions'), result=document.getElementById('syncPhotoPickResult');
+  if(!boxState||!actions) return;
+  const b=boxState, cols=b.c1-b.c0+1, rows=b.r1-b.r0+1;
+  const mode=(actions.querySelector('input[name="boxMode"]:checked')||{}).value||'key';
+  const crispEl=actions.querySelector('#boxCrisp'), nEl=actions.querySelector('#boxNew');
+  const crisp=crispEl?crispEl.checked:true, nNew=nEl?Math.max(1,Math.min(12,parseInt(nEl.value)||4)):4;
+  const plan=planBoxPick(b,mode,crisp,nNew);
+  if(plan.empty){ actions.innerHTML=''; result.textContent='Your key has no colors to match against. Generate a canvas first.'; return; }
+  let changes=0; plan.cells.forEach((c,i)=>{ const key=(b.r0+((i/cols)|0))*gridW+b.c0+(i%cols); if(!scatterCells.has(key)&&dmcMatches[indices[key]]&&!(dmcMatches[indices[key]].code===c.entry.code&&(dmcMatches[indices[key]].catalogType||undefined)===(c.entry.catalogType||undefined))) changes++; });
+  const mk=(label,colorAt)=>{ const wrap=document.createElement('div'); wrap.innerHTML='<div class="small-note" style="margin:0.25rem 0 0.1rem">'+label+'</div>'; const cv=document.createElement('canvas'); cv.width=cols; cv.height=rows; cv.style.cssText='width:100%;height:auto;max-height:180px;object-fit:contain;image-rendering:pixelated;border:1px solid #ccc;display:block;background:#fff'; const cx=cv.getContext('2d'),id=cx.createImageData(cols,rows); for(let i=0;i<cols*rows;i++){ const c=colorAt(i); id.data[i*4]=c[0]; id.data[i*4+1]=c[1]; id.data[i*4+2]=c[2]; id.data[i*4+3]=255; } cx.putImageData(id,0,0); wrap.appendChild(cv); return wrap; };
+  const keyAt=i=>(b.r0+((i/cols)|0))*gridW+b.c0+(i%cols);
+  actions.innerHTML='';
+  const box=document.createElement('div'); box.style.cssText='margin-top:0.4rem;padding:0.5rem;border:1px solid var(--border);border-radius:6px';
+  box.innerHTML='<div class="small-note" style="margin:0"><b>Box:</b> rows '+(b.r0+1)+'–'+(b.r1+1)+', columns '+(b.c0+1)+'–'+(b.c1+1)+' ('+(cols*rows).toLocaleString()+' drills)</div>'+
+    '<label style="display:block;font-size:0.75rem;margin-top:0.35rem"><input type="radio" name="boxMode" value="key"'+(mode==='key'?' checked':'')+'> Recolor from photo, using only my key</label>'+
+    '<label style="display:block;font-size:0.75rem"><input type="radio" name="boxMode" value="add"'+(mode==='add'?' checked':'')+'> Add this box\'s colors, then recolor</label>'+
+    '<label style="display:'+(mode==='add'?'block':'none')+';font-size:0.75rem;margin-left:1rem">Add up to <input type="number" id="boxNew" min="1" max="12" value="'+nNew+'" style="width:3.4rem"> new colors</label>'+
+    '<label style="display:block;font-size:0.75rem;margin-top:0.2rem"><input type="checkbox" id="boxCrisp"'+(crisp?' checked':'')+'> Crisp edges (keeps thin lines like letters; can make them slightly bolder)</label>';
+  box.appendChild(mk('Now',i=>palette[indices[keyAt(i)]]||[200,200,200]));
+  box.appendChild(mk('After',i=>plan.cells[i].rgb));
+  let drift=0,n=0; { const S0=sampleBoxFromPhoto(b,false); S0.forEach((px,i)=>{ const pc=palette[indices[keyAt(i)]]; if(pc){ drift+=Math.sqrt(colorDist(px,pc)); n++; } }); drift=n?drift/n:0; }
+  if(drift>70){ const w=document.createElement('div'); w.className='small-note'; w.style.cssText='margin-top:0.3rem;color:#b45309'; w.textContent='Heads up: the photo here doesn\'t look like the pattern (the crop or size may have changed since you generated). Check the preview before applying.'; box.appendChild(w); }
+  const info=document.createElement('div'); info.className='small-note'; info.style.marginTop='0.3rem';
+  info.textContent=(changes?'':'Nothing to change with these settings. ')+changes+' drill'+(changes===1?'':'s')+' would change'+(plan.added.length?'. New colors: '+plan.added.map(c=>codePrefixLong(c.entry)+c.entry.code+' '+c.entry.name).join(', '):'.');
+  box.appendChild(info);
+  const row=document.createElement('div'); row.style.cssText='display:flex;gap:0.4rem;margin-top:0.4rem';
+  const ap=document.createElement('button'); ap.type='button'; ap.className='lib-btn'; ap.style.flex='1'; ap.textContent='Apply'; ap.disabled=!changes&&!plan.added.length;
+  const ca=document.createElement('button'); ca.type='button'; ca.className='lib-btn'; ca.style.flex='1'; ca.textContent='Cancel';
+  row.appendChild(ap); row.appendChild(ca); box.appendChild(row); actions.appendChild(box);
+  box.querySelectorAll('input').forEach(el=>el.addEventListener('change',renderBoxPanel));
+  ca.addEventListener('click',()=>{ boxState=null; actions.innerHTML=''; result.textContent='Drag a rectangle over the part of the photo you want to re-read.'; });
+  ap.addEventListener('click',()=>{
+    pushHistory();
+    let n=0;
+    plan.cells.forEach((c,i)=>{ const key=keyAt(i); if(scatterCells.has(key)) return; const idx=resolveExactEntryToPaletteIndex(c.entry); if(indices[key]!==idx){ indices[key]=idx; n++; } });
+    redrawPreview(); buildLegend(getCurrentCounts());
+    flashShortcutToast('✓ Re-read '+(cols*rows).toLocaleString()+' drills from the photo ('+n.toLocaleString()+' changed). Undo with Ctrl+Z.');
+    boxState=null; actions.innerHTML=''; result.textContent='Applied. Drag another box, or Undo if it isn\'t right.';
+  });
+  result.textContent='Check the preview, then Apply.';
+  try{ box.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
+}
 
 document.getElementById('zoomIn').addEventListener('click',()=>{
   if(zoomLevel<ZOOM_MAX){ zoomLevel=Math.min(ZOOM_MAX, Math.round((zoomLevel+ZOOM_STEP)*100)/100); applyZoom(); }
@@ -5829,6 +6007,7 @@ function refreshSliderLabels(){
 }
 
 function restoreProject(data){
+  scatterCells=new Set(Array.isArray(data&&data.scatterCells)?data.scatterCells:[]);
   const s=data.settings||{};
   const setVal=(id,v)=>{ if(v===undefined||v===null) return; const el=document.getElementById(id); if(el) el.value=v; };
 
