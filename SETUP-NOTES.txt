@@ -1,0 +1,41 @@
+STUDIO APPS - HOW TO PUT THEM ON GITHUB PAGES
+=============================================
+This folder holds two installable apps (build 2026-10-10e):
+  diamond-dander/   Diamond Dander Art Studio
+  canvas-studio/    Canvas Studio
+
+BEFORE YOU START: back up your saved projects
+  Saved projects live inside the browser, tied to the web address.
+  A new web address starts empty. In your CURRENT copy of the studio, open
+  "Saved Projects & Backup", download a backup, and keep that file safe.
+  After the new app is up, open it and restore the backup there.
+
+STEP 1  Make a free account at github.com (skip if you have one).
+STEP 2  Click the + at the top right, then "New repository".
+        Name it something short like  studio  (the name becomes part of the web address).
+        Choose PUBLIC (free GitHub Pages needs a public repository).
+        Click "Create repository".
+STEP 3  On the new repository page, click "uploading an existing file".
+        Unzip this download first, then drag the two folders
+        (diamond-dander and canvas-studio) into the upload box. Wait until every file
+        has finished uploading, then click "Commit changes".
+STEP 4  Click Settings > Pages. Under "Build and deployment", set Source to
+        "Deploy from a branch", pick the branch "main" and folder "/ (root)", click Save.
+STEP 5  Wait a minute or two, refresh the Pages screen. It shows your address:
+          https://YOURNAME.github.io/studio/diamond-dander/
+          https://YOURNAME.github.io/studio/canvas-studio/
+STEP 6  Install it:
+          iPad / iPhone (Safari): open the address, tap Share, then "Add to Home Screen".
+          Computer (Chrome or Edge): open the address, click the install icon at the right
+          end of the address bar.
+        Open it once while online. After that it also works with no internet.
+
+UPDATING LATER
+  When you get a new version, replace index.html AND sw.js inside the app folder
+  (upload them over the old ones). The next time the app opens online, it updates itself.
+
+GOOD TO KNOW
+  - Anyone who has the address can open the app, and its code is visible. Do not put
+    anything private in the repository.
+  - The app's own fonts come from Google; with no internet it falls back to plain fonts.
+    Everything else works offline, including PDF export.
