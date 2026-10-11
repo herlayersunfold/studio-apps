@@ -763,7 +763,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11e</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11f</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -6251,6 +6251,22 @@ function restoreProject(data){
       // since it's driven by the same responsive frame width either way.
       const cropCvSnap=document.getElementById('cropCanvas');
       genCropSnapshot={zoom:cropState.zoom,panX:cropState.panX,panY:cropState.panY,baseCW:cropCvSnap.width,baseCH:cropCvSnap.height};
+      // The saved Pan & Zoom is just where the photo view was when the project was saved, not
+      // necessarily what the pattern was generated from. When the saved region fits the grid,
+      // rebuild the snapshot from it so Pick a Box / photo views map to the right cells.
+      try{
+        const sr=data.currentPatternPhotoRegion, wg=getWholeGridImageFraction(), tol=0.01;
+        if(sr && regionMatchesGridShape(sr) && (!wg || Math.abs(sr.x-wg.x)>tol||Math.abs(sr.y-wg.y)>tol||Math.abs(sr.w-wg.w)>tol||Math.abs(sr.h-wg.h)>tol)){
+          const CW=genCropSnapshot.baseCW, CH=genCropSnapshot.baseCH;
+          const imgRatio=sourceImage.width/sourceImage.height, canRatio=CW/CH;
+          let baseW,baseH; if(imgRatio>canRatio){baseH=CH;baseW=CH*imgRatio;} else {baseW=CW;baseH=CW/imgRatio;}
+          const drawW=CW/sr.w, drawH=CH/sr.h, zm=drawW/baseW;
+          const keep=genCropSnapshot;
+          genCropSnapshot={zoom:zm,panX:-sr.x*drawW-(CW-drawW)/2,panY:-sr.y*drawH-(CH-drawH)/2,baseCW:CW,baseCH:CH};
+          const chk=getWholeGridImageFraction();
+          if(!(chk && isFinite(zm) && zm>0 && Math.abs(chk.x-sr.x)<=tol && Math.abs(chk.y-sr.y)<=tol && Math.abs(chk.w-sr.w)<=tol && Math.abs(chk.h-sr.h)<=tol)) genCropSnapshot=keep;
+        }
+      }catch(e){}
       finish();
     };
     img.onerror=()=>{ alert('The project loaded, but its photo could not be restored.'); finish(); };
