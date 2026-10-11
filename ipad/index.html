@@ -68,6 +68,9 @@ body.space-panning #diamondCanvas,body.space-panning .canvas-wrap{cursor:grabbin
 .stats-bar{display:flex;gap:1.5rem;font-size:0.67rem;color:var(--muted);background:#fff;padding:0.45rem 1rem;border-radius:4px;border:1px solid var(--border);align-self:center}
 .stats-bar span{color:var(--red);font-weight:600;font-family:'DM Mono',monospace}
 .canvas-wrap{box-shadow:0 4px 20px rgba(0,0,0,0.2);cursor:crosshair;flex-shrink:0;margin:0 auto;transform-origin:top left}
+#traceCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:0}
+.canvas-wrap.trace-on{position:relative}
+.canvas-wrap.trace-on #diamondCanvas{position:relative;z-index:1}
 #diamondCanvas{display:block;image-rendering:pixelated;touch-action:none}
 .placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;width:560px;max-width:100%;height:400px;border:2px dashed rgba(135,7,7,0.18);border-radius:8px;background:#fff;gap:0.75rem;color:#bbb;align-self:center;margin:auto;box-sizing:border-box}
 .placeholder .ico{font-size:2.5rem;opacity:0.25}
@@ -615,6 +618,20 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
     <button class="btn btn-out" id="resizeDuplicateBtn" disabled style="margin-top:0.6rem">⤢ Duplicate &amp; Resize</button>
   </div>
 
+  <div class="sb-section" id="traceOverSection">
+    <div class="sec-label">Trace Over Photo</div>
+    <div class="small-note" style="margin-bottom:0.5rem">Shows your uploaded photo behind the pattern so you can compare colors and repaint cells by hand. Reference only — it never changes your pattern, exports, or PDF.</div>
+    <div class="toggle-row">
+      <span>Show photo behind pattern</span>
+      <input type="checkbox" id="traceOverToggle" autocomplete="off">
+    </div>
+    <div id="traceOverBody" style="display:none">
+      <label style="font-size:0.65rem;color:var(--muted);display:block;margin:0.3rem 0 0.2rem">Photo visibility: <span id="traceOverVal">50</span>%</label>
+      <input type="range" id="traceOverOpacity" min="10" max="90" step="5" value="50" style="width:100%">
+      <div class="small-note" id="traceOverNote" style="margin-top:0.3rem"></div>
+    </div>
+  </div>
+
   <div class="sb-section" id="restrictPaletteSection">
     <div class="sec-label">Restrict Palette</div>
     <div class="toggle-row">
@@ -746,7 +763,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11c</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11d</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -916,6 +933,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
     <canvas id="photoSelectCanvas" style="display:none"></canvas>
   </div>
   <div class="canvas-wrap" id="canvasWrap" style="display:none">
+    <canvas id="traceCanvas" style="display:none"></canvas>
     <canvas id="diamondCanvas"></canvas>
   </div>
   <div class="canvas-hscroll-wrap" id="canvasHscroll">
@@ -1326,6 +1344,18 @@ function getWholeGridImageFraction(){
   const drawW=baseW*genCropSnapshot.zoom,drawH=baseH*genCropSnapshot.zoom;
   const dx=(CW-drawW)/2+genCropSnapshot.panX, dy=(CH-drawH)/2+genCropSnapshot.panY;
   return {x:-dx/drawW, y:-dy/drawH, w:CW/drawW, h:CH/drawH};
+}
+// Which part of the photo the pattern covers (set when a desktop project that was
+// cropped after generating is opened here; otherwise the whole generated area).
+let currentPatternPhotoRegion=null;
+let traceFit=null;
+function regionMatchesGridShape(region){
+  if(!region||!sourceImage||!sourceImage.width||!sourceImage.height||!gridW||!gridH) return false;
+  const regionPixelW=region.w*sourceImage.width;
+  const regionPixelH=region.h*sourceImage.height;
+  if(regionPixelW<=0||regionPixelH<=0) return false;
+  const ratio=(regionPixelW/regionPixelH)/(gridW/gridH);
+  return ratio>=0.85&&ratio<=1.18;
 }
 function photoCanvasClickToImageFraction(cv,px,py){
   if(cv.id==='syncPhotoCanvas'){
@@ -1916,7 +1946,7 @@ function loadFile(file){
     sourceImage=img;
     sourceImageObjectUrl=objectUrl||null;
     cropState={zoom:1,panX:0,panY:0};
-    genCropSnapshot=null; // stale until the next Generate on this new photo
+    genCropSnapshot=null; currentPatternPhotoRegion=null; traceFit=null; // stale until the next Generate on this new photo
     simplifyRegions=[]; // region coordinates only make sense for the photo they were drawn on
     const scanResultEl=document.getElementById('scanResult');
     if(scanResultEl) scanResultEl.style.display='none';
@@ -2583,7 +2613,7 @@ function renderPreview(targetCtx,targetCellPx){
 generateBtn.addEventListener('click',generate);
 
 function generate(){
-  scatterCells=new Set();
+  scatterCells=new Set(); currentPatternPhotoRegion=null; traceFit=null;
   if(!sourceImage) return;
   selectedCells.clear();
   hiddenColorCells={};
@@ -4370,6 +4400,7 @@ const ZOOM_MIN=0.25;
 const ZOOM_MAX=4;
 
 function applyZoom(){
+  try{ refreshTraceOverlay(); }catch(e){ /* trace overlay not ready yet during early init */ }
   canvasWrap.style.transform=`scale(${zoomLevel})`;
   const w=diamondCanvas.width*zoomLevel;
   const h=diamondCanvas.height*zoomLevel;
@@ -4383,6 +4414,87 @@ function applyZoom(){
   updateHscroll();
   if(typeof syncPhotoZoomEnabled!=='undefined' && syncPhotoZoomEnabled) renderSyncedPhotoView();
 }
+
+// ── TRACE OVER PHOTO ───────────────────────────────────────────────────────
+// Draws the uploaded photo on its own canvas BEHIND the pattern, lined up to
+// the grid, and makes the pattern canvas see-through (plain CSS opacity — the
+// pattern's own pixels, exports and PDF are never touched). Display only.
+const traceCanvas=document.getElementById('traceCanvas');
+const traceOverToggle=document.getElementById('traceOverToggle');
+const traceOverBody=document.getElementById('traceOverBody');
+const traceOverOpacity=document.getElementById('traceOverOpacity');
+const traceOverVal=document.getElementById('traceOverVal');
+const traceOverNote=document.getElementById('traceOverNote');
+let traceDrawKey='';
+
+function getTraceMapping(){
+  if(!sourceImage||!indices.length||!gridW||!gridH) return null;
+  if(traceFit&&traceFit.gridW===gridW&&traceFit.gridH===gridH){
+    return {region:traceFit.region,rect:traceFit.rect};
+  }
+  let reg=null;
+  if(currentPatternPhotoRegion&&regionMatchesGridShape(currentPatternPhotoRegion)) reg=currentPatternPhotoRegion;
+  else { const w=getWholeGridImageFraction(); if(w&&regionMatchesGridShape(w)) reg=w; }
+  return reg?{region:reg,rect:{c0:0,r0:0,cw:gridW,ch:gridH}}:null;
+}
+
+function refreshTraceOverlay(){
+  if(!traceOverToggle) return;
+  if(!traceOverToggle.checked){
+    traceCanvas.style.display='none';
+    diamondCanvas.style.opacity='';
+    canvasWrap.classList.remove('trace-on');
+    traceOverBody.style.display='none';
+    traceDrawKey='';
+    return;
+  }
+  traceOverBody.style.display='block';
+  const m=getTraceMapping();
+  if(!m){
+    traceCanvas.style.display='none';
+    diamondCanvas.style.opacity='';
+    canvasWrap.classList.remove('trace-on');
+    traceDrawKey='';
+    traceOverNote.textContent=!sourceImage
+      ? 'Upload a photo and generate a pattern first.'
+      : (indices.length ? "This pattern's shape no longer matches the photo (it was resized or cropped), so the photo can't be lined up here." : 'Generate a pattern first.');
+    return;
+  }
+  traceOverNote.textContent='Lower the slider to see more pattern, raise it to see more photo.';
+  const W=diamondCanvas.width,H=diamondCanvas.height;
+  const key=[W,H,gridW,gridH,sourceImage.width,sourceImage.height,JSON.stringify(m)].join('|');
+  if(key!==traceDrawKey||traceCanvas.style.display==='none'){
+    traceDrawKey=key;
+    traceCanvas.width=W; traceCanvas.height=H;
+    const ctx=traceCanvas.getContext('2d');
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,W,H);
+    const stepX=(W-1)/gridW, stepY=(H-1)/gridH;
+    let dx=1+m.rect.c0*stepX, dy=1+m.rect.r0*stepY;
+    let dw=m.rect.cw*stepX, dh=m.rect.ch*stepY;
+    const iw=sourceImage.width, ih=sourceImage.height;
+    let sx=m.region.x*iw, sy=m.region.y*ih, sw=m.region.w*iw, sh=m.region.h*ih;
+    const kx=dw/sw, ky=dh/sh;
+    if(sx<0){ dx+=-sx*kx; dw-=-sx*kx; sw+=sx; sx=0; }
+    if(sx+sw>iw){ const o=sx+sw-iw; dw-=o*kx; sw-=o; }
+    if(sy<0){ dy+=-sy*ky; dh-=-sy*ky; sh+=sy; sy=0; }
+    if(sy+sh>ih){ const o=sy+sh-ih; dh-=o*ky; sh-=o; }
+    if(sw>0&&sh>0&&dw>0&&dh>0) ctx.drawImage(sourceImage,sx,sy,sw,sh,dx,dy,dw,dh);
+  }
+  canvasWrap.classList.add('trace-on');
+  traceCanvas.style.display='block';
+  diamondCanvas.style.opacity=String(1-(parseInt(traceOverOpacity.value,10)/100));
+}
+
+traceOverToggle.addEventListener('change',refreshTraceOverlay);
+traceOverOpacity.addEventListener('input',()=>{
+  traceOverVal.textContent=traceOverOpacity.value;
+  refreshTraceOverlay();
+});
+if(typeof ResizeObserver!=='undefined'){
+  new ResizeObserver(()=>refreshTraceOverlay()).observe(diamondCanvas);
+}
+
 
 // ── SYNC PHOTO ZOOM (Upload Photo view follows the canvas viewport) ─────────
 // Figures out which grid cells are actually visible on screen right now
@@ -6008,6 +6120,7 @@ function refreshSliderLabels(){
 
 function restoreProject(data){
   scatterCells=new Set(Array.isArray(data&&data.scatterCells)?data.scatterCells:[]);
+  currentPatternPhotoRegion=(data&&data.currentPatternPhotoRegion)||null; traceFit=null;
   const s=data.settings||{};
   const setVal=(id,v)=>{ if(v===undefined||v===null) return; const el=document.getElementById(id); if(el) el.value=v; };
 
