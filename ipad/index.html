@@ -745,7 +745,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11a</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11b</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -6294,7 +6294,7 @@ async function syncPull(id,uid,meta,row){
   return 'pulled';
 }
 function syncCanon(o){ return JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v); }
-async function syncFpOf(name,client,status,data,hash){ return syncHash(syncCanon([name||null,client==null?null:client,status==null?null:status,data||{},hash||null])); }
+async function syncFpOf(name,client,status,data,hash){ const d=Object.assign({},data||{}); delete d.savedAt; delete d.image; return syncHash(syncCanon([name||null,client==null?null:client,status==null?null:status,d,hash||null])); }
 function syncConflictId(id){ return id+' (sync conflict '+new Date().toISOString().slice(0,16).replace('T',' ')+')'; }
 
 // ── the sync itself ──
@@ -6358,7 +6358,16 @@ async function syncRun(quiet){
           // first time this device sees this project in the cloud
           if((rec.savedAt||'')===(row.saved_at||'')&&(rec.name||'')===(row.name||'')){ const d=Object.assign({},rec.data||{}); const im=d.image; delete d.image; meta[id]={remote:row.updated_at,dirty:false,fp:await syncFpOf(rec.name,rec.client||null,rec.status||null,d,im?await syncHash(im):null)}; continue; }
           remoteChanged=true; localDirty=true;
-        } else { remoteChanged=m.remote!==row.updated_at; localDirty=!!m.dirty; }
+        } else {
+          remoteChanged=m.remote!==row.updated_at; localDirty=!!m.dirty;
+          // autosave marks a project changed every ~45s even when nothing changed — only
+          // count it as an edit if its content really differs from what was last synced
+          if(localDirty&&m.fp){
+            const dl0=Object.assign({},rec.data||{}); const im0=dl0.image; delete dl0.image;
+            const fp0=await syncFpOf(rec.name,rec.client||null,rec.status||null,dl0,im0?await syncHash(im0):null);
+            if(fp0===m.fp){ localDirty=false; m.dirty=false; meta[id]=m; }
+          }
+        }
         if(!remoteChanged&&!localDirty) continue;
         if(!remoteChanged&&localDirty){ const r=await syncPush(rec,uid,photoSet,meta,false); if(r==='pushed') stats.pushed++; continue; }
         if(remoteChanged&&!localDirty){ await syncPull(id,uid,meta,row); stats.pulled++; continue; }
