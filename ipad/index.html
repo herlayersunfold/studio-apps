@@ -763,7 +763,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11d</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11e</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -6348,8 +6348,21 @@ function libDelete(id,opts){
   }));
 }
 
+// Lightweight listing for the project list: keeps only the small label fields so photo
+// data isn't all held in memory at once.
+function libListLight(){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const out=[];
+    const tx=db.transaction(DB_STORE,'readonly');
+    const req=tx.objectStore(DB_STORE).openCursor();
+    req.onsuccess=()=>{ const c=req.result; if(c){ const v=c.value||{}; out.push({id:v.id,name:v.name,client:v.client,status:v.status,savedAt:v.savedAt}); c.continue(); } };
+    tx.oncomplete=()=>res(out);
+    tx.onerror=()=>rej(tx.error);
+  }));
+}
+
 function renderProjectLibrary(){
-  return libList().then(items=>{
+  return libListLight().then(items=>{
     items.sort((a,b)=>String(b.savedAt||'').localeCompare(String(a.savedAt||'')));
     if(!items.length){ projectLibrary.innerHTML='<div class="lib-empty">No saved projects yet.</div>'; return; }
     projectLibrary.innerHTML='';
