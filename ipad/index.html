@@ -479,6 +479,20 @@ body.dock-on .dock-menu-head{display:flex;position:sticky;top:0;z-index:2}
 .dock-empty{display:none;padding:1rem;font-size:0.8rem;color:var(--muted)}
 #legendSection[style*="display: none"]+.dock-empty,#legendSection[style*="display:none"]+.dock-empty{display:block}
 body.dock-on.dock-menu-open .sidebar{display:flex;position:fixed;right:10px;bottom:calc(var(--dock-h) + 10px);width:min(40vw,460px);max-height:calc(100vh - var(--dock-top) - var(--dock-h) - 24px);z-index:410;background:var(--surface);border:1.5px solid var(--red);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.28);overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Hand switch: scroll strip on the thumb side, panels kept clear of it ── */
+#dockScrollStrip{display:none;position:fixed;top:var(--dock-top);bottom:var(--dock-h);width:44px;z-index:300;background:rgba(135,7,7,0.07);touch-action:none;user-select:none;-webkit-user-select:none}
+body.dock-on #dockScrollStrip{display:block}
+body.hand-right #dockScrollStrip{right:0;border-left:1px solid var(--red-border)}
+body.hand-left #dockScrollStrip{left:0;border-right:1px solid var(--red-border)}
+#dockScrollStrip .dss-thumb{position:absolute;left:6px;right:6px;top:0;height:80px;min-height:56px;border-radius:12px;background:var(--red);opacity:0.55}
+#dockScrollStrip.drag .dss-thumb{opacity:0.85}
+body.dock-on.hand-right .canvas-area{padding-right:calc(1.5rem + 44px)}
+body.dock-on.hand-left .canvas-area{padding-left:calc(1.5rem + 44px)}
+body.hand-right #dockPanelPhoto{left:auto;right:54px}
+body.hand-right #dockPanelColors{right:auto;left:10px}
+body.dock-on.dock-menu-open.hand-right .sidebar{right:auto;left:10px}
+body.hand-left #dockPanelPhoto{left:54px}
 </style>
 </head>
 <body>
@@ -811,7 +825,7 @@ body.dock-on.dock-menu-open .sidebar{display:flex;position:fixed;right:10px;bott
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11l</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11m</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -7854,7 +7868,51 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     const want=pref&&DOCK_MQ.matches;
     if(want&&!on) enable(); else if(!want&&on) disable();
     if(toggleBtn){ toggleBtn.style.display=DOCK_MQ.matches?'':'none'; toggleBtn.textContent=pref?'🧰 Dock: On':'🧰 Dock: Off'; toggleBtn.classList.toggle('active',pref); }
+    if(typeof applyHand==='function') applyHand();
   }
+
+  // ── Hand switch (right / left): puts a big scroll strip on the thumb side of the canvas and
+  // keeps the panels clear of it. Remembered per device; switching clears dragged positions.
+  let hand='right'; try{ hand=localStorage.getItem('studioHand')==='left'?'left':'right'; }catch(e){}
+  let strip=null, thumb=null, handBtn=null;
+  function stripSync(){
+    if(!strip||!thumb||!on) return;
+    const ca=document.querySelector('.canvas-area'); if(!ca) return;
+    const max=ca.scrollHeight-ca.clientHeight, th=strip.clientHeight;
+    const h=Math.max(56,Math.min(th,th*ca.clientHeight/Math.max(ca.scrollHeight,1)));
+    thumb.style.height=h+'px';
+    thumb.style.top=(max>0?(ca.scrollTop/max)*(th-h):0)+'px';
+    strip.style.opacity=max>1?'1':'0.4';
+  }
+  function buildStrip(){
+    strip=document.createElement('div'); strip.id='dockScrollStrip'; strip.title='Drag to scroll the canvas up and down';
+    thumb=document.createElement('div'); thumb.className='dss-thumb'; strip.appendChild(thumb); document.body.appendChild(strip);
+    const ca=document.querySelector('.canvas-area'); let down=false;
+    const go=e=>{
+      const r=strip.getBoundingClientRect(), h=thumb.offsetHeight;
+      const f=Math.max(0,Math.min(1,(e.clientY-r.top-h/2)/Math.max(1,r.height-h)));
+      ca.scrollTop=f*(ca.scrollHeight-ca.clientHeight);
+    };
+    strip.addEventListener('pointerdown',e=>{ down=true; strip.classList.add('drag'); try{ strip.setPointerCapture(e.pointerId); }catch(_){} go(e); e.preventDefault(); });
+    strip.addEventListener('pointermove',e=>{ if(down) go(e); });
+    const up=()=>{ down=false; strip.classList.remove('drag'); };
+    strip.addEventListener('pointerup',up); strip.addEventListener('pointercancel',up);
+    ca.addEventListener('scroll',stripSync,{passive:true});
+    window.addEventListener('resize',stripSync);
+    setInterval(stripSync,700);
+  }
+  function applyHand(){
+    document.body.classList.toggle('hand-right',hand==='right');
+    document.body.classList.toggle('hand-left',hand==='left');
+    if(handBtn){ handBtn.textContent=hand==='right'?'✋ Hand: Right':'✋ Hand: Left'; handBtn.style.display=DOCK_MQ.matches?'':'none'; }
+    stripSync();
+  }
+  function setHand(h){
+    hand=h; try{ localStorage.setItem('studioHand',h); }catch(e){}
+    pos={}; savePos(); [pPhoto,pColors,document.querySelector('.sidebar')].forEach(el=>{ if(el) resetPlace(el); });
+    applyHand();
+  }
+  buildStrip();
   const adv=$('advancedToolsBtn');
   if(adv){
     toggleBtn=document.createElement('button'); toggleBtn.type='button'; toggleBtn.id='dockToggleBtn'; toggleBtn.className='btn-out advanced-toggle-btn';
@@ -7862,8 +7920,15 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     toggleBtn.addEventListener('click',()=>{ pref=!pref; try{ localStorage.setItem('studioDock',pref?'on':'off'); }catch(e){} refresh(); });
     adv.after(toggleBtn);
   }
+  if(adv){
+    handBtn=document.createElement('button'); handBtn.type='button'; handBtn.id='dockHandBtn'; handBtn.className='btn-out advanced-toggle-btn';
+    handBtn.title='Right-handed or left-handed: moves the scroll strip and panels to suit the hand you hold the iPad with.';
+    handBtn.addEventListener('click',()=>setHand(hand==='right'?'left':'right'));
+    toggleBtn.after(handBtn);
+  }
+  applyHand();
   try{ DOCK_MQ.addEventListener('change',refresh); }catch(e){ try{ DOCK_MQ.addListener(refresh); }catch(e2){} }
-  window.__dock={refresh,get on(){return on;},state:st,toggle};
+  window.__dock={setHand,get hand(){return hand;},refresh,get on(){return on;},state:st,toggle};
   refresh();
 })();
 </script>
