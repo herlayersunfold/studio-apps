@@ -809,7 +809,7 @@ body.dock-on.dock-menu-open .sidebar{display:flex;position:fixed;right:10px;bott
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11h</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11i</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -7700,6 +7700,48 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
       initCropCanvas(); clampPan(); renderCropPreview();
     }catch(e){}
   }
+  // ── Drag panels by their header (finger or mouse). Position is remembered; double-tap the
+  // header to put a panel back in its default spot.
+  let pos={}; try{ pos=JSON.parse(localStorage.getItem('studioDockPos')||'{}')||{}; }catch(e){}
+  function savePos(){ try{ localStorage.setItem('studioDockPos',JSON.stringify(pos)); }catch(e){} }
+  function dockBottomLimit(){ return window.innerHeight-(dock?dock.offsetHeight:64)-8; }
+  function placeAt(el,x,y){
+    const w=el.offsetWidth||300;
+    const hdr=document.querySelector('header'); const top=hdr?hdr.offsetHeight:0;
+    x=Math.max(-(w-90),Math.min(window.innerWidth-90,x));
+    y=Math.max(top,Math.min(dockBottomLimit()-48,y));
+    el.style.right='auto'; el.style.bottom='auto'; el.style.left=x+'px'; el.style.top=y+'px';
+    el.style.maxHeight=Math.max(120,dockBottomLimit()-y)+'px';
+    return {x,y};
+  }
+  function resetPlace(el){ ['left','top','right','bottom','maxHeight'].forEach(k=>el.style[k]=''); }
+  function applySaved(el,key){ const p=pos[key]; if(p&&on) placeAt(el,p.x,p.y); }
+  function makeDraggable(handle,el,key){
+    handle.style.touchAction='none'; handle.style.cursor='grab'; handle.style.userSelect='none';
+    let drag=false,sx=0,sy=0,ox=0,oy=0,lastTap=0;
+    handle.addEventListener('pointerdown',e=>{
+      if(e.target.closest('.dock-x')) return;
+      const now=Date.now();
+      if(now-lastTap<350){ resetPlace(el); delete pos[key]; savePos(); lastTap=0; return; }
+      lastTap=now;
+      const r=el.getBoundingClientRect(); ox=r.left; oy=r.top; sx=e.clientX; sy=e.clientY; drag=true;
+      try{ handle.setPointerCapture(e.pointerId); }catch(_){}
+      handle.style.cursor='grabbing';
+    });
+    handle.addEventListener('pointermove',e=>{
+      if(!drag) return;
+      const p=placeAt(el,ox+(e.clientX-sx),oy+(e.clientY-sy)); pos[key]=p;
+    });
+    const end=()=>{ if(!drag) return; drag=false; handle.style.cursor='grab'; savePos(); };
+    handle.addEventListener('pointerup',end); handle.addEventListener('pointercancel',end);
+  }
+  function clampAllPanels(){
+    if(!on) return;
+    [['photo',pPhoto],['colors',pColors],['menu',document.querySelector('.sidebar')]].forEach(([k,el])=>{
+      if(!el||!pos[k]) return; pos[k]=placeAt(el,pos[k].x,pos[k].y);
+    });
+  }
+  window.addEventListener('resize',()=>{ clampAllPanels(); });
   function apply(){
     document.body.classList.toggle('dock-menu-open',st.menu);
     document.body.classList.toggle('dock-panels-open',st.photo||st.colors||st.menu);
@@ -7730,7 +7772,7 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     x.addEventListener('click',()=>toggle(which));
     h.appendChild(t); h.appendChild(x);
     const body=document.createElement('div'); body.className='dock-panel-body';
-    p.appendChild(h); p.appendChild(body); p._body=body;
+    p.appendChild(h); p.appendChild(body); p._body=body; p._head=h;
     return p;
   }
   function build(){
@@ -7753,6 +7795,8 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     const mt=document.createElement('span'); mt.textContent='☰ Menu';
     const mx=document.createElement('button'); mx.type='button'; mx.className='dock-x'; mx.textContent='✕'; mx.addEventListener('click',()=>toggle('menu'));
     menuHead.appendChild(mt); menuHead.appendChild(mx);
+    makeDraggable(pPhoto._head,pPhoto,'photo'); makeDraggable(pColors._head,pColors,'colors');
+    makeDraggable(menuHead,document.querySelector('.sidebar'),'menu');
   }
   function enable(){
     if(!dock) build();
@@ -7770,6 +7814,7 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     const sb=document.querySelector('.sidebar'); sb.insertBefore(menuHead,sb.firstChild);
     if(!sourceImage){ st.photo=true; st.menu=true; st.colors=false; }
     apply();
+    applySaved(pPhoto,'photo'); applySaved(pColors,'colors'); applySaved(document.querySelector('.sidebar'),'menu');
     if(window.ResizeObserver){
       roCrop=new ResizeObserver(()=>refitCrop()); const f=$('cropFrame'); if(f) roCrop.observe(f);
       roDock=new ResizeObserver(()=>{
@@ -7787,6 +7832,7 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     [$('canvasToolbar'),photoSec,legendSec,deletedSec].forEach(el=>{ if(el) moveBack(el); });
     if(menuHead&&menuHead.parentNode) menuHead.remove();
     const e=document.querySelector('.dock-empty'); if(e) e.remove();
+    [pPhoto,pColors,document.querySelector('.sidebar')].forEach(el=>{ if(el) resetPlace(el); });
     document.body.classList.remove('dock-on','dock-menu-open','dock-panels-open');
     document.documentElement.style.removeProperty('--dock-h');
     setTimeout(refitCrop,50);
