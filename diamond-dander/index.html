@@ -9676,6 +9676,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='7'){ modeCopyPasteBtn.click(); flashShortcutToast('Copy/Paste'); return; }
   if(e.key==='8'){ if(advancedToolsVisible){ modeCropPatternBtn.click(); flashShortcutToast('Crop Pattern'); } return; }
 
+  // V: toggle Grid View / Preview
+  if(e.key==='v'||e.key==='V'){ const pt=document.getElementById('previewToggle'); if(pt&&pt.offsetParent!==null){ pt.click(); flashShortcutToast(pt.classList.contains('active')?'Preview':'Grid View'); } return; }
+
   // +/-: zoom in/out
   if(e.key==='+'||e.key==='='){
     e.preventDefault();

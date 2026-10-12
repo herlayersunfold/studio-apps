@@ -811,7 +811,7 @@ body.dock-on.dock-menu-open .sidebar{display:flex;position:fixed;right:10px;bott
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11j</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11k</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -7299,6 +7299,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='5'){ if(advancedToolsVisible){ modeCleanupBtn.click(); flashShortcutToast('Cleanup'); } return; }
   if(e.key==='6'){ if(advancedToolsVisible){ modeSimplifyBtn.click(); flashShortcutToast('Simplify'); } return; }
   if(e.key==='7'){ if(advancedToolsVisible){ modeCopyPasteBtn.click(); flashShortcutToast('Copy/Paste'); } return; }
+
+  // V: toggle Grid View / Preview
+  if(e.key==='v'||e.key==='V'){ const pt=document.getElementById('previewToggle'); if(pt&&pt.offsetParent!==null){ pt.click(); flashShortcutToast(pt.classList.contains('active')?'Preview':'Grid View'); } return; }
 
   // +/-: zoom in/out
   if(e.key==='+'||e.key==='='){
