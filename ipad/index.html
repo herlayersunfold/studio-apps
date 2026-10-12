@@ -431,6 +431,52 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 .mode-switch-btn.active{background:var(--red);color:#fff}
 .mode-switch-btn:hover:not(.active){background:var(--red-bg)}
 
+
+/* ── DOCK LAYOUT (landscape iPad): canvas fills the screen; a floating bottom bar holds the ── */
+/* ── tools; Photo / Colors / Menu open as panels over the canvas. Off in portrait or when   ── */
+/* ── switched off with the header button — everything below only applies under body.dock-on. ── */
+:root{--dock-h:64px;--dock-top:56px}
+#studioDock,.dock-panel,.dock-menu-head{display:none}
+body.dock-on{height:100vh;height:100dvh;overflow:hidden}
+body.dock-on header{padding:0.35rem 1rem}
+body.dock-on #appSubtitleP,body.dock-on #mobileQuickNav{display:none}
+body.dock-on .layout{flex:1;min-height:0;overflow:hidden}
+body.dock-on .canvas-area{height:100%;padding-bottom:calc(var(--dock-h) + 18px)}
+body.dock-on.dock-panels-open .canvas-area{padding-bottom:calc(var(--dock-h) + 46vh)}
+body.dock-on .sidebar{display:none}
+body.dock-on #studioDock{display:flex}
+body.dock-on .shortcut-toast{bottom:calc(var(--dock-h) + 16px)}
+body.dock-on .multi-panel,body.dock-on .cleanup-panel{bottom:calc(var(--dock-h) + 12px)}
+#studioDock{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#fff;border-top:2px solid var(--red);box-shadow:0 -4px 16px rgba(0,0,0,0.12);align-items:center;gap:0.5rem;padding:0.4rem 0.7rem calc(0.4rem + env(safe-area-inset-bottom));overflow-x:auto;-webkit-overflow-scrolling:touch}
+.dock-nav{display:flex;gap:0.35rem;flex-shrink:0}
+.dock-btn{font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:700;padding:0.5rem 0.75rem;min-height:44px;border-radius:10px;border:1.5px solid var(--red-border);background:#fff;color:var(--red);white-space:nowrap;cursor:pointer}
+.dock-btn.on{background:var(--red);color:#fff;border-color:var(--red)}
+.dock-sep{width:1px;align-self:stretch;background:var(--border-strong);flex-shrink:0;margin:0.2rem 0.1rem}
+#studioDock .canvas-toolbar{justify-content:flex-start;width:max-content;border:none;box-shadow:none;background:transparent;padding:0;margin:0;flex-wrap:nowrap;gap:0.3rem;max-width:none;align-self:center;flex-shrink:0}
+#studioDock .toolbar-label,#studioDock .toolbar-divider{display:none}
+#studioDock .mode-btn,#studioDock .mirror-select{padding:0.5rem 0.65rem;font-size:0.8rem;min-height:44px;white-space:nowrap}
+#studioDock .zoom-btn,#studioDock .history-btn{min-width:44px;min-height:44px}
+#studioDock .zoom-level{min-width:44px;text-align:center}
+#studioDock #undoBtn,#studioDock #redoBtn{order:1}
+#studioDock #modeColor,#studioDock #modePaint,#studioDock #modeMulti,#studioDock #modeFill,#studioDock #modeCleanup,#studioDock #modeSimplify,#studioDock #modeCopyPaste{order:2}
+#studioDock #zoomOut,#studioDock #zoomLevel,#studioDock #zoomIn,#studioDock #zoomReset{order:3}
+#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn,#studioDock #previewToggle{order:4}
+.dock-panel{position:fixed;bottom:calc(var(--dock-h) + 10px);z-index:400;background:#fff;border:1.5px solid var(--red);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.28);flex-direction:column;overflow:hidden;max-height:calc(100vh - var(--dock-top) - var(--dock-h) - 24px)}
+.dock-panel.open{display:flex}
+#dockPanelPhoto{left:10px;width:min(46vw,540px)}
+#dockPanelColors{right:10px;width:min(34vw,400px)}
+.dock-panel-head,.dock-menu-head{align-items:center;justify-content:space-between;padding:0.45rem 0.7rem;background:var(--red);color:#fff;font-size:0.78rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0}
+.dock-panel-head{display:flex}
+body.dock-on .dock-menu-head{display:flex;position:sticky;top:0;z-index:2}
+.dock-x{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;min-width:40px;min-height:36px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.6);background:transparent;color:#fff;cursor:pointer}
+.dock-panel-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+.dock-panel .sb-section{border-bottom:none}
+.dock-panel .sb-chevron{display:none}
+.dock-panel .sb-section-toggle{pointer-events:none}
+#dockPanelPhoto .sb-section-toggle{display:none}
+.dock-empty{display:none;padding:1rem;font-size:0.8rem;color:var(--muted)}
+#legendSection[style*="display: none"]+.dock-empty,#legendSection[style*="display:none"]+.dock-empty{display:block}
+body.dock-on.dock-menu-open .sidebar{display:flex;position:fixed;right:10px;bottom:calc(var(--dock-h) + 10px);width:min(40vw,460px);max-height:calc(100vh - var(--dock-top) - var(--dock-h) - 24px);z-index:410;background:var(--surface);border:1.5px solid var(--red);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.28);overflow-y:auto;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>
@@ -763,7 +809,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11g</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11h</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -7611,6 +7657,156 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     applyModeUI(newMode);
   });
 });
+
+// ── DOCK LAYOUT (landscape iPad) ──────────────────────────────────────────────
+// Landscape + wide screen: the canvas fills the screen and a floating bar along the
+// bottom holds Menu / Photo / Colors plus the existing toolbar (undo, redo, edit modes,
+// zoom). Photo and Colors open as panels over the canvas and stay open until closed.
+// Nothing is rebuilt: the existing sections are MOVED into the panels (and moved back
+// when the dock is off), so every button, id and handler keeps working untouched.
+// Off in portrait / narrow screens, or via the header "Dock" button.
+(function(){
+  const $=id=>document.getElementById(id);
+  const DOCK_MQ=window.matchMedia('(min-width: 900px) and (orientation: landscape)');
+  let pref=true; try{ pref=localStorage.getItem('studioDock')!=='off'; }catch(e){}
+  let on=false; const st={photo:false,colors:false,menu:false};
+  const home=new Map();
+  let dock,toolsSlot,pPhoto,pColors,menuHead,photoSec,legendSec,deletedSec,toggleBtn,roCrop,roDock,mo;
+  const btn={};
+
+  function moveTo(el,target,before){
+    if(!el||!target) return;
+    if(!home.has(el)){ const m=document.createComment('dock-home'); el.parentNode.insertBefore(m,el); home.set(el,m); }
+    if(before) target.insertBefore(el,before); else target.appendChild(el);
+  }
+  function moveBack(el){
+    const m=home.get(el);
+    if(m&&m.parentNode){ m.parentNode.insertBefore(el,m); m.remove(); }
+    home.delete(el);
+  }
+  function forceOpen(sec){
+    if(!sec) return;
+    sec.classList.add('open');
+    const b=sec.querySelector(':scope > .sb-section-body'); if(b) b.style.display='';
+  }
+  function refitCrop(){
+    try{
+      const frame=$('cropFrame'), cv=$('cropCanvas');
+      if(!sourceImage||!frame||!cv||!frame.clientWidth) return;
+      const oldW=cv.width, newW=frame.clientWidth;
+      if(Math.abs(newW-oldW)<=2) return;
+      const k=newW/(oldW||newW);
+      cropState.panX*=k; cropState.panY*=k;
+      initCropCanvas(); clampPan(); renderCropPreview();
+    }catch(e){}
+  }
+  function apply(){
+    document.body.classList.toggle('dock-menu-open',st.menu);
+    document.body.classList.toggle('dock-panels-open',st.photo||st.colors||st.menu);
+    if(pPhoto) pPhoto.classList.toggle('open',st.photo);
+    if(pColors) pColors.classList.toggle('open',st.colors);
+    if(btn.photo) btn.photo.classList.toggle('on',st.photo);
+    if(btn.colors) btn.colors.classList.toggle('on',st.colors);
+    if(btn.menu) btn.menu.classList.toggle('on',st.menu);
+    if(st.photo) requestAnimationFrame(refitCrop);
+  }
+  function toggle(which){
+    if(which==='photo'){ st.photo=!st.photo; }
+    else if(which==='colors'){ st.colors=!st.colors; if(st.colors) st.menu=false; }
+    else if(which==='menu'){ st.menu=!st.menu; if(st.menu) st.colors=false; }
+    apply();
+  }
+  function openBox(){
+    st.photo=true; apply();
+    requestAnimationFrame(()=>{ refitCrop(); const b=$('syncPhotoBoxBtn'); if(b&&sourceImage&&!/ON/.test(b.textContent)) b.click(); });
+  }
+  function onCanvasReady(){ if(st.menu){ st.menu=false; st.colors=true; apply(); } }
+  function mkBtn(label,fn,title){ const b=document.createElement('button'); b.type='button'; b.className='dock-btn'; b.textContent=label; if(title) b.title=title; b.addEventListener('click',fn); return b; }
+  function mkPanel(id,title,which){
+    const p=document.createElement('div'); p.className='dock-panel'; p.id=id;
+    const h=document.createElement('div'); h.className='dock-panel-head';
+    const t=document.createElement('span'); t.textContent=title;
+    const x=document.createElement('button'); x.type='button'; x.className='dock-x'; x.textContent='✕'; x.title='Close (reopen from the bar)';
+    x.addEventListener('click',()=>toggle(which));
+    h.appendChild(t); h.appendChild(x);
+    const body=document.createElement('div'); body.className='dock-panel-body';
+    p.appendChild(h); p.appendChild(body); p._body=body;
+    return p;
+  }
+  function build(){
+    dock=document.createElement('div'); dock.id='studioDock';
+    const nav=document.createElement('div'); nav.className='dock-nav';
+    btn.menu=mkBtn('☰ Menu',()=>toggle('menu'),'Size, settings, generate, save and everything else');
+    btn.photo=mkBtn('📷 Photo',()=>toggle('photo'),'Your photo, with the Pick a Box tool');
+    btn.box=mkBtn('▭ Box',openBox,'Open the photo and turn on Pick a Box');
+    btn.colors=mkBtn('🎨 Colors',()=>toggle('colors'),'Color key');
+    btn.menu.id='dockMenuBtn'; btn.photo.id='dockPhotoBtn'; btn.box.id='dockBoxBtn'; btn.colors.id='dockColorsBtn';
+    [btn.menu,btn.photo,btn.box,btn.colors].forEach(b=>nav.appendChild(b));
+    const sep=document.createElement('div'); sep.className='dock-sep';
+    toolsSlot=document.createElement('div'); toolsSlot.style.cssText='display:flex;align-items:center;flex-shrink:0';
+    dock.appendChild(nav); dock.appendChild(sep); dock.appendChild(toolsSlot);
+    document.body.appendChild(dock);
+    pPhoto=mkPanel('dockPanelPhoto','📷 Photo & Box','photo');
+    pColors=mkPanel('dockPanelColors','🎨 Color key','colors');
+    document.body.appendChild(pPhoto); document.body.appendChild(pColors);
+    menuHead=document.createElement('div'); menuHead.className='dock-menu-head';
+    const mt=document.createElement('span'); mt.textContent='☰ Menu';
+    const mx=document.createElement('button'); mx.type='button'; mx.className='dock-x'; mx.textContent='✕'; mx.addEventListener('click',()=>toggle('menu'));
+    menuHead.appendChild(mt); menuHead.appendChild(mx);
+  }
+  function enable(){
+    if(!dock) build();
+    photoSec=$('uploadZone')&&$('uploadZone').closest('.sb-section');
+    legendSec=$('legendSection'); deletedSec=$('deletedColorsSection');
+    document.body.classList.add('dock-on'); on=true;
+    moveTo($('canvasToolbar'),toolsSlot);
+    moveTo(photoSec,pPhoto._body); forceOpen(photoSec);
+    moveTo(legendSec,pColors._body); forceOpen(legendSec);
+    if(deletedSec) moveTo(deletedSec,pColors._body);
+    if(!pColors._body.querySelector('.dock-empty')){
+      const e=document.createElement('div'); e.className='dock-empty'; e.textContent='Generate a canvas first, then your colors show up here.';
+      legendSec.after(e);
+    }
+    const sb=document.querySelector('.sidebar'); sb.insertBefore(menuHead,sb.firstChild);
+    if(!sourceImage){ st.photo=true; st.menu=true; st.colors=false; }
+    apply();
+    if(window.ResizeObserver){
+      roCrop=new ResizeObserver(()=>refitCrop()); const f=$('cropFrame'); if(f) roCrop.observe(f);
+      roDock=new ResizeObserver(()=>{
+        document.documentElement.style.setProperty('--dock-h',dock.offsetHeight+'px');
+        const h=document.querySelector('header'); if(h) document.documentElement.style.setProperty('--dock-top',h.offsetHeight+'px');
+      }); roDock.observe(dock); roDock.observe(document.querySelector('header'));
+    }
+    const tb=$('canvasToolbar'); let was=tb.style.display!=='none';
+    mo=new MutationObserver(()=>{ const now=tb.style.display!=='none'; if(now&&!was) onCanvasReady(); was=now; });
+    mo.observe(tb,{attributes:true,attributeFilter:['style']});
+  }
+  function disable(){
+    on=false;
+    if(roCrop) roCrop.disconnect(); if(roDock) roDock.disconnect(); if(mo) mo.disconnect();
+    [$('canvasToolbar'),photoSec,legendSec,deletedSec].forEach(el=>{ if(el) moveBack(el); });
+    if(menuHead&&menuHead.parentNode) menuHead.remove();
+    const e=document.querySelector('.dock-empty'); if(e) e.remove();
+    document.body.classList.remove('dock-on','dock-menu-open','dock-panels-open');
+    document.documentElement.style.removeProperty('--dock-h');
+    setTimeout(refitCrop,50);
+  }
+  function refresh(){
+    const want=pref&&DOCK_MQ.matches;
+    if(want&&!on) enable(); else if(!want&&on) disable();
+    if(toggleBtn){ toggleBtn.style.display=DOCK_MQ.matches?'':'none'; toggleBtn.textContent=pref?'🧰 Dock: On':'🧰 Dock: Off'; toggleBtn.classList.toggle('active',pref); }
+  }
+  const adv=$('advancedToolsBtn');
+  if(adv){
+    toggleBtn=document.createElement('button'); toggleBtn.type='button'; toggleBtn.id='dockToggleBtn'; toggleBtn.className='btn-out advanced-toggle-btn';
+    toggleBtn.title='Landscape layout: canvas fills the screen with a floating bar and panels. Turn off for the original single-page layout.';
+    toggleBtn.addEventListener('click',()=>{ pref=!pref; try{ localStorage.setItem('studioDock',pref?'on':'off'); }catch(e){} refresh(); });
+    adv.after(toggleBtn);
+  }
+  try{ DOCK_MQ.addEventListener('change',refresh); }catch(e){ try{ DOCK_MQ.addListener(refresh); }catch(e2){} }
+  window.__dock={refresh,get on(){return on;},state:st,toggle};
+  refresh();
+})();
 </script>
 
 <script>
