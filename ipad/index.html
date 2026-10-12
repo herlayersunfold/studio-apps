@@ -763,7 +763,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11f</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11g</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -4790,7 +4790,13 @@ function boxFromDrag(cv,cx0,cy0,cx1,cy1){
 }
 
 // Reads the photo for every drill in the box. Returns one [r,g,b] per drill, row by row.
+// Crisp strength: 0 = off (plain average), 1 = light (a drill only turns to the letter color when the
+// letter covers most of it, so strokes stay thin and gaps stay open), 2 = normal (the original setting).
+// true/false are still accepted and mean normal/off.
+const BOX_LIGHT_FRAC=0.45, BOX_NORMAL_FRAC=0.34;
 function sampleBoxFromPhoto(b,crisp){
+  const level=(crisp===true)?2:(crisp===false||crisp==null)?0:crisp;
+  const crispFrac=level===1?BOX_LIGHT_FRAC:BOX_NORMAL_FRAC;
   const whole=getWholeGridImageFraction(), iw=sourceImage.width, ih=sourceImage.height;
   const cols=b.c1-b.c0+1, rows=b.r1-b.r0+1;
   const cellX=c=>(whole.x+c/gridW*whole.w)*iw, cellY=r=>(whole.y+r/gridH*whole.h)*ih;
@@ -4809,7 +4815,7 @@ function sampleBoxFromPhoto(b,crisp){
   }
   const mean=list=>{ let r=0,g=0,bl=0; list.forEach(p=>{r+=p[0];g+=p[1];bl+=p[2];}); const n=list.length||1; return [r/n,g/n,bl/n]; };
   const avgs=cells.map(mean);
-  if(!crisp) return avgs;
+  if(!level) return avgs;
   const med=ch=>{ const v=avgs.map(a=>a[ch]).sort((x,y)=>x-y); return v[Math.floor(v.length/2)]; };
   const bg=[med(0),med(1),med(2)];
   return cells.map((list,i)=>{
@@ -4817,7 +4823,7 @@ function sampleBoxFromPhoto(b,crisp){
     if(maxD<40) return avgs[i];
     const thr=(maxD*0.5)*(maxD*0.5), feat=[], rest=[];
     list.forEach((p,j)=>(ds[j]>=thr?feat:rest).push(p));
-    return (feat.length/list.length>=0.34)?mean(feat):(rest.length?mean(rest):avgs[i]);
+    return (feat.length/list.length>=crispFrac)?mean(feat):(rest.length?mean(rest):avgs[i]);
   });
 }
 
@@ -4847,7 +4853,7 @@ function renderBoxPanel(){
   const b=boxState, cols=b.c1-b.c0+1, rows=b.r1-b.r0+1;
   const mode=(actions.querySelector('input[name="boxMode"]:checked')||{}).value||'key';
   const crispEl=actions.querySelector('#boxCrisp'), nEl=actions.querySelector('#boxNew');
-  const crisp=crispEl?crispEl.checked:true, nNew=nEl?Math.max(1,Math.min(12,parseInt(nEl.value)||4)):4;
+  const crisp=crispEl?(parseInt(crispEl.value)||0):2, nNew=nEl?Math.max(1,Math.min(12,parseInt(nEl.value)||4)):4;
   const plan=planBoxPick(b,mode,crisp,nNew);
   if(plan.empty){ actions.innerHTML=''; result.textContent='Your key has no colors to match against. Generate a canvas first.'; return; }
   let changes=0; plan.cells.forEach((c,i)=>{ const key=(b.r0+((i/cols)|0))*gridW+b.c0+(i%cols); if(!scatterCells.has(key)&&dmcMatches[indices[key]]&&!(dmcMatches[indices[key]].code===c.entry.code&&(dmcMatches[indices[key]].catalogType||undefined)===(c.entry.catalogType||undefined))) changes++; });
@@ -4859,7 +4865,11 @@ function renderBoxPanel(){
     '<label style="display:block;font-size:0.75rem;margin-top:0.35rem"><input type="radio" name="boxMode" value="key"'+(mode==='key'?' checked':'')+'> Recolor from photo, using only my key</label>'+
     '<label style="display:block;font-size:0.75rem"><input type="radio" name="boxMode" value="add"'+(mode==='add'?' checked':'')+'> Add this box\'s colors, then recolor</label>'+
     '<label style="display:'+(mode==='add'?'block':'none')+';font-size:0.75rem;margin-left:1rem">Add up to <input type="number" id="boxNew" min="1" max="12" value="'+nNew+'" style="width:3.4rem"> new colors</label>'+
-    '<label style="display:block;font-size:0.75rem;margin-top:0.2rem"><input type="checkbox" id="boxCrisp"'+(crisp?' checked':'')+'> Crisp edges (keeps thin lines like letters; can make them slightly bolder)</label>';
+    '<label style="display:block;font-size:0.75rem;margin-top:0.2rem">Crisp edges (for thin lines like letters) <select id="boxCrisp" style="font-size:0.75rem;margin-left:0.2rem">'+
+      '<option value="0"'+(crisp===0?' selected':'')+'>Off</option>'+
+      '<option value="1"'+(crisp===1?' selected':'')+'>Light</option>'+
+      '<option value="2"'+(crisp===2?' selected':'')+'>Normal</option></select></label>'+
+    '<div class="small-note" style="margin:0.1rem 0 0">Off keeps letter shapes but can look gray. Normal is brightest but can make letters bolder and merge. Light is in between.</div>';
   box.appendChild(mk('Now',i=>palette[indices[keyAt(i)]]||[200,200,200]));
   box.appendChild(mk('After',i=>plan.cells[i].rgb));
   let drift=0,n=0; { const S0=sampleBoxFromPhoto(b,false); S0.forEach((px,i)=>{ const pc=palette[indices[keyAt(i)]]; if(pc){ drift+=Math.sqrt(colorDist(px,pc)); n++; } }); drift=n?drift/n:0; }
@@ -4871,7 +4881,7 @@ function renderBoxPanel(){
   const ap=document.createElement('button'); ap.type='button'; ap.className='lib-btn'; ap.style.flex='1'; ap.textContent='Apply'; ap.disabled=!changes&&!plan.added.length;
   const ca=document.createElement('button'); ca.type='button'; ca.className='lib-btn'; ca.style.flex='1'; ca.textContent='Cancel';
   row.appendChild(ap); row.appendChild(ca); box.appendChild(row); actions.appendChild(box);
-  box.querySelectorAll('input').forEach(el=>el.addEventListener('change',renderBoxPanel));
+  box.querySelectorAll('input,select').forEach(el=>el.addEventListener('change',renderBoxPanel));
   ca.addEventListener('click',()=>{ boxState=null; actions.innerHTML=''; result.textContent='Drag a rectangle over the part of the photo you want to re-read.'; });
   ap.addEventListener('click',()=>{
     pushHistory();
