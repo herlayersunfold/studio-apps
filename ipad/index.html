@@ -460,7 +460,9 @@ body.dock-on .multi-panel,body.dock-on .cleanup-panel{bottom:calc(var(--dock-h) 
 #studioDock #undoBtn,#studioDock #redoBtn{order:1}
 #studioDock #modeColor,#studioDock #modePaint,#studioDock #modeMulti,#studioDock #modeFill,#studioDock #modeCleanup,#studioDock #modeSimplify,#studioDock #modeCopyPaste{order:2}
 #studioDock #zoomOut,#studioDock #zoomLevel,#studioDock #zoomIn,#studioDock #zoomReset{order:3}
-#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn,#studioDock #previewToggle{order:4}
+#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn{order:4}
+#studioDock #previewToggle{order:2;border-color:var(--red);color:var(--red);font-weight:700;margin-left:0.25rem}
+#studioDock #previewToggle.active{background:var(--red);color:#fff}
 .dock-panel{position:fixed;bottom:calc(var(--dock-h) + 10px);z-index:400;background:#fff;border:1.5px solid var(--red);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.28);flex-direction:column;overflow:hidden;max-height:calc(100vh - var(--dock-top) - var(--dock-h) - 24px)}
 .dock-panel.open{display:flex}
 #dockPanelPhoto{left:10px;width:min(46vw,540px)}
@@ -809,7 +811,7 @@ body.dock-on.dock-menu-open .sidebar{display:flex;position:fixed;right:10px;bott
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11i</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11j</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
