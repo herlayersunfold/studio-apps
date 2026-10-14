@@ -460,7 +460,8 @@ body.dock-on .multi-panel,body.dock-on .cleanup-panel{bottom:calc(var(--dock-h) 
 #studioDock #undoBtn,#studioDock #redoBtn{order:1}
 #studioDock #modeColor,#studioDock #modePaint,#studioDock #modeMulti,#studioDock #modeFill,#studioDock #modeCleanup,#studioDock #modeSimplify,#studioDock #modeCopyPaste{order:2}
 #studioDock #zoomOut,#studioDock #zoomLevel,#studioDock #zoomIn,#studioDock #zoomReset{order:3}
-#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn,#studioDock #resetAreaBtn{order:4}
+#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn{order:4}
+#studioDock #resetAreaBtn{order:2;border-color:var(--red);color:var(--red);font-weight:700}
 #studioDock #previewToggle{order:2;border-color:var(--red);color:var(--red);font-weight:700;margin-left:0.25rem}
 #studioDock #previewToggle.active{background:var(--red);color:#fff}
 .dock-panel{position:fixed;bottom:calc(var(--dock-h) + 10px);z-index:400;background:#fff;border:1.5px solid var(--red);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.28);flex-direction:column;overflow:hidden;max-height:calc(100vh - var(--dock-top) - var(--dock-h) - 24px)}
@@ -825,7 +826,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11n</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11o</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -973,7 +974,7 @@ body.hand-left #dockPanelPhoto{left:54px}
     <button id="syncPhotoZoomBtn" class="mode-btn" title="When on, the Upload Photo view above automatically zooms to show whichever part of the pattern is currently visible on screen">🔍 Sync Photo Zoom</button>
     <div class="toolbar-divider"></div>
     <button id="resetCanvasBtn" class="mode-btn" disabled title="Discard every edit made since the last Generate (or Duplicate & Resize, or loading a project) and go back to that version. Can still be undone afterward.">↺ Reset Canvas</button>
-    <button id="resetAreaBtn" class="mode-btn" title="Reset just one part of the canvas (like a face) back to the original, keeping all your other edits">↺ Reset Area</button>
+    <button id="resetAreaBtn" class="mode-btn" title="Fix just one part (like a face): put it back to the original, or re-read it from the photo. Your other edits stay.">↺ Reset Area</button>
     <div class="toolbar-divider"></div>
     <span class="toolbar-label">View</span>
     <button id="previewToggle" class="mode-btn" title="Preview without symbols — color blocks only, grid stays visible">◉ Preview</button>
@@ -1133,6 +1134,8 @@ body.hand-left #dockPanelPhoto{left:54px}
   <div id="cpySelectControls">
     <button class="cup-detect-btn" id="cpyCopyBtn" disabled>📋 Copy Selection</button>
     <button class="cup-detect-btn" id="cpyResetAreaBtn" disabled style="margin-top:0.4rem" title="Put only the selected cells back to the original (as of the last Generate / Resize / Load). Everything else you edited stays.">↺ Reset Selected Area</button>
+    <button class="cup-detect-btn" id="cpyRereadBtn" disabled style="margin-top:0.4rem" title="Look at the photo again for just the selected cells and pick the closest colors already in your key. No new colors are added.">📷 Re-read From Photo</button>
+    <label style="display:block;font-size:0.72rem;margin-top:0.3rem;color:var(--muted)">Smoothness <select id="cpySmooth" style="font-size:0.72rem;margin-left:0.2rem;width:auto"><option value="0">Off (exact)</option><option value="1">Light</option><option value="2">Normal</option></select></label>
   </div>
   <div id="cpyPasteControls" style="display:none">
     <div class="drill-toggle-row" style="margin-bottom:0.6rem">
@@ -4150,7 +4153,7 @@ function updateCopyPasteUI(){
     const n=selectedCells.size;
     cpyStatusEl.textContent=`${n} cell${n===1?'':'s'} selected`;
     cpyCopyBtn.disabled=(n===0);
-    { const rb=document.getElementById('cpyResetAreaBtn'); if(rb) rb.disabled=(n===0); }
+    { const rb=document.getElementById('cpyResetAreaBtn'); if(rb) rb.disabled=(n===0); const rr=document.getElementById('cpyRereadBtn'); if(rr) rr.disabled=(n===0); }
     cpyClearSelectionBtn.disabled=(n===0);
     cpyHintEl.textContent='Drag a rectangle to select an area, then Copy it or Reset it to the original. Hold Shift to add another, Alt to subtract.';
   }
@@ -4186,11 +4189,56 @@ function resetSelectedArea(){
   if(typeof updateCopyPasteUI==='function'&&copyPasteMode) updateCopyPasteUI();
   flashShortcutToast(changed?`↺ ${changed} drill${changed===1?'':'s'} put back to the original`:'That area is already the original',2000);
 }
+// ── Re-read From Photo: for the selected cells only, look at the matching spot on the original photo and
+// pick the closest color already in the key (no new colors). Smoothness tidies lone stray drills afterward.
+function rereadSelectedFromPhoto(){
+  if(!selectedCells.size||!indices.length) return;
+  if(!sourceImage||!genCropSnapshot){ flashShortcutToast("The photo this pattern came from isn't loaded here",2800); return; }
+  let r0=Infinity,r1=-1,c0=Infinity,c1=-1;
+  selectedCells.forEach(k=>{ const r=Math.floor(k/gridW),c=k%gridW; if(r<r0)r0=r; if(r>r1)r1=r; if(c<c0)c0=c; if(c>c1)c1=c; });
+  const b={r0,r1,c0,c1}, cols=c1-c0+1;
+  const S=sampleBoxFromPhoto(b,0);
+  const counts=getCurrentCounts(), cands=[];
+  palette.forEach((pc,i)=>{ if(hiddenColors.has(i)||(counts&&counts[i]<=0)) return; cands.push({i,rgb:pc}); });
+  if(!cands.length) return;
+  let drift=0,n=0;
+  const snapOK=lastGeneratedSnapshot&&lastGeneratedSnapshot.indices.length===indices.length; // judge alignment against the as-generated version, so heavy edits don't trip it
+  selectedCells.forEach(k=>{ const pc=snapOK?lastGeneratedSnapshot.palette[lastGeneratedSnapshot.indices[k]]:palette[indices[k]]; const px=S[(Math.floor(k/gridW)-r0)*cols+(k%gridW-c0)]; if(pc&&px){ drift+=Math.sqrt(colorDist(px,pc)); n++; } });
+  if(n&&drift/n>70){ flashShortcutToast("The photo here doesn't line up with the pattern (was it cropped after generating?), so I left it alone",3600); return; }
+  const next=new Map();
+  selectedCells.forEach(k=>{
+    if(scatterCells.has(k)) return;
+    const px=S[(Math.floor(k/gridW)-r0)*cols+(k%gridW-c0)];
+    let best=cands[0].i,bd=Infinity; cands.forEach(c=>{ const d=colorDist(px,c.rgb); if(d<bd){bd=d;best=c.i;} });
+    next.set(k,best);
+  });
+  const sm=parseInt((document.getElementById('cpySmooth')||{}).value)||0;
+  if(sm){
+    const at=k=>next.has(k)?next.get(k):indices[k], fixes=new Map();
+    next.forEach((own,k)=>{
+      const r=Math.floor(k/gridW),c=k%gridW, tally={}; let same8=0, same4=0;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        if(!dr&&!dc) continue; const rr=r+dr,cc=c+dc; if(rr<0||cc<0||rr>=gridH||cc>=gridW) continue;
+        const v=at(rr*gridW+cc); tally[v]=(tally[v]||0)+1; if(v===own){ same8++; if(!dr||!dc) same4++; }
+      }
+      let mv=-1,mc=0; for(const v in tally){ if(tally[v]>mc){mc=tally[v];mv=+v;} }
+      if(mv===own||mv<0) return;
+      if(sm===1?(same4===0&&mc>=4):(same8<=1&&mc>=5)) fixes.set(k,mv);
+    });
+    fixes.forEach((v,k)=>next.set(k,v));
+  }
+  pushHistory();
+  let changed=0; next.forEach((v,k)=>{ if(indices[k]!==v){ indices[k]=v; changed++; } });
+  clearSelection(); redrawPreview(); buildLegend(getCurrentCounts());
+  if(typeof updateCopyPasteUI==='function'&&copyPasteMode) updateCopyPasteUI();
+  flashShortcutToast(changed?`📷 ${changed} drill${changed===1?'':'s'} re-read from the photo (Undo if it's not right)`:'Already matches the photo here',2600);
+}
+document.getElementById('cpyRereadBtn').addEventListener('click',rereadSelectedFromPhoto);
 document.getElementById('cpyResetAreaBtn').addEventListener('click',resetSelectedArea);
 document.getElementById('resetAreaBtn').addEventListener('click',()=>{
   if(!indices.length) return;
   if(!copyPasteMode) modeCopyPasteBtn.click();
-  flashShortcutToast('Drag over the part to reset, then tap Reset Selected Area',3200);
+  flashShortcutToast('Drag over the part, then tap Reset Selected Area or Re-read From Photo',3200);
 });
 
 cpyCopyBtn.addEventListener('click',()=>{
