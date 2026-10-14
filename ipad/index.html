@@ -460,7 +460,7 @@ body.dock-on .multi-panel,body.dock-on .cleanup-panel{bottom:calc(var(--dock-h) 
 #studioDock #undoBtn,#studioDock #redoBtn{order:1}
 #studioDock #modeColor,#studioDock #modePaint,#studioDock #modeMulti,#studioDock #modeFill,#studioDock #modeCleanup,#studioDock #modeSimplify,#studioDock #modeCopyPaste{order:2}
 #studioDock #zoomOut,#studioDock #zoomLevel,#studioDock #zoomIn,#studioDock #zoomReset{order:3}
-#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn{order:4}
+#studioDock #mirrorMode,#studioDock #syncPhotoZoomBtn,#studioDock #resetCanvasBtn,#studioDock #resetAreaBtn{order:4}
 #studioDock #previewToggle{order:2;border-color:var(--red);color:var(--red);font-weight:700;margin-left:0.25rem}
 #studioDock #previewToggle.active{background:var(--red);color:#fff}
 .dock-panel{position:fixed;bottom:calc(var(--dock-h) + 10px);z-index:400;background:#fff;border:1.5px solid var(--red);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.28);flex-direction:column;overflow:hidden;max-height:calc(100vh - var(--dock-top) - var(--dock-h) - 24px)}
@@ -825,7 +825,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11m</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11n</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -973,6 +973,7 @@ body.hand-left #dockPanelPhoto{left:54px}
     <button id="syncPhotoZoomBtn" class="mode-btn" title="When on, the Upload Photo view above automatically zooms to show whichever part of the pattern is currently visible on screen">🔍 Sync Photo Zoom</button>
     <div class="toolbar-divider"></div>
     <button id="resetCanvasBtn" class="mode-btn" disabled title="Discard every edit made since the last Generate (or Duplicate & Resize, or loading a project) and go back to that version. Can still be undone afterward.">↺ Reset Canvas</button>
+    <button id="resetAreaBtn" class="mode-btn" title="Reset just one part of the canvas (like a face) back to the original, keeping all your other edits">↺ Reset Area</button>
     <div class="toolbar-divider"></div>
     <span class="toolbar-label">View</span>
     <button id="previewToggle" class="mode-btn" title="Preview without symbols — color blocks only, grid stays visible">◉ Preview</button>
@@ -1131,6 +1132,7 @@ body.hand-left #dockPanelPhoto{left:54px}
   </div>
   <div id="cpySelectControls">
     <button class="cup-detect-btn" id="cpyCopyBtn" disabled>📋 Copy Selection</button>
+    <button class="cup-detect-btn" id="cpyResetAreaBtn" disabled style="margin-top:0.4rem" title="Put only the selected cells back to the original (as of the last Generate / Resize / Load). Everything else you edited stays.">↺ Reset Selected Area</button>
   </div>
   <div id="cpyPasteControls" style="display:none">
     <div class="drill-toggle-row" style="margin-bottom:0.6rem">
@@ -1142,7 +1144,7 @@ body.hand-left #dockPanelPhoto{left:54px}
   <div class="cup-footer" id="cpySelectFooter">
     <button class="cup-btn cup-clear" id="cpyClearSelection" disabled>Clear selection</button>
   </div>
-  <div class="cup-hint" id="cpyHint">Drag a rectangle to select an area, then Copy. Hold Shift to add another, Alt to subtract.</div>
+  <div class="cup-hint" id="cpyHint">Drag a rectangle to select an area, then Copy it or Reset it to the original. Hold Shift to add another, Alt to subtract.</div>
 </div>
 
 <script>
@@ -4148,10 +4150,48 @@ function updateCopyPasteUI(){
     const n=selectedCells.size;
     cpyStatusEl.textContent=`${n} cell${n===1?'':'s'} selected`;
     cpyCopyBtn.disabled=(n===0);
+    { const rb=document.getElementById('cpyResetAreaBtn'); if(rb) rb.disabled=(n===0); }
     cpyClearSelectionBtn.disabled=(n===0);
-    cpyHintEl.textContent='Drag a rectangle to select an area, then Copy. Hold Shift to add another, Alt to subtract.';
+    cpyHintEl.textContent='Drag a rectangle to select an area, then Copy it or Reset it to the original. Hold Shift to add another, Alt to subtract.';
   }
 }
+
+// ── Reset Area: put just the selected cells back to how they were at the last Generate / Resize / Load,
+// leaving every other edit on the canvas alone. Undoable like any other edit.
+function resetSelectedArea(){
+  const snap=lastGeneratedSnapshot;
+  if(!snap||!selectedCells.size||!indices.length) return;
+  if(snap.indices.length!==indices.length){ flashShortcutToast("The original is a different size — can't reset an area",2400); return; }
+  pushHistory();
+  const cache={}; let changed=0;
+  selectedCells.forEach(k=>{
+    const o=snap.indices[k];
+    let idx=cache[o];
+    if(idx===undefined){
+      const e=snap.dmcMatches[o];
+      idx=e?dmcMatches.findIndex(d=>d.code===e.code&&String(d.hex).toLowerCase()===String(e.hex).toLowerCase()):-1;
+      if(idx===-1&&e){
+        idx=palette.length; palette.push(snap.palette[o].slice());
+        dmcMatches.push({code:e.code,name:e.name,hex:e.hex,rgb:e.rgb.slice()});
+        const vals=Object.values(symbolRank); symbolRank[idx]=vals.length?Math.max(...vals)+1:0;
+      }
+      if(hiddenColors.has(idx)){ hiddenColors.delete(idx); delete hiddenColorCells[idx]; }
+      cache[o]=idx;
+    }
+    if(idx>=0&&indices[k]!==idx){ indices[k]=idx; changed++; }
+  });
+  clearSelection();
+  redrawPreview();
+  buildLegend(getCurrentCounts());
+  if(typeof updateCopyPasteUI==='function'&&copyPasteMode) updateCopyPasteUI();
+  flashShortcutToast(changed?`↺ ${changed} drill${changed===1?'':'s'} put back to the original`:'That area is already the original',2000);
+}
+document.getElementById('cpyResetAreaBtn').addEventListener('click',resetSelectedArea);
+document.getElementById('resetAreaBtn').addEventListener('click',()=>{
+  if(!indices.length) return;
+  if(!copyPasteMode) modeCopyPasteBtn.click();
+  flashShortcutToast('Drag over the part to reset, then tap Reset Selected Area',3200);
+});
 
 cpyCopyBtn.addEventListener('click',()=>{
   if(!selectedCells.size) return;
