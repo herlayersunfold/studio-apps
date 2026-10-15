@@ -826,7 +826,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11o</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11p</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -1136,6 +1136,7 @@ body.hand-left #dockPanelPhoto{left:54px}
     <button class="cup-detect-btn" id="cpyResetAreaBtn" disabled style="margin-top:0.4rem" title="Put only the selected cells back to the original (as of the last Generate / Resize / Load). Everything else you edited stays.">↺ Reset Selected Area</button>
     <button class="cup-detect-btn" id="cpyRereadBtn" disabled style="margin-top:0.4rem" title="Look at the photo again for just the selected cells and pick the closest colors already in your key. No new colors are added.">📷 Re-read From Photo</button>
     <label style="display:block;font-size:0.72rem;margin-top:0.3rem;color:var(--muted)">Smoothness <select id="cpySmooth" style="font-size:0.72rem;margin-left:0.2rem;width:auto"><option value="0">Off (exact)</option><option value="1">Light</option><option value="2">Normal</option></select></label>
+    <button class="cup-detect-btn" id="cpySaveBtn" disabled style="margin-top:0.4rem" title="Save the selected area to the shelf so you can paste it later, even into another canvas.">💾 Save Selection to Shelf</button>
   </div>
   <div id="cpyPasteControls" style="display:none">
     <div class="drill-toggle-row" style="margin-bottom:0.6rem">
@@ -1143,10 +1144,17 @@ body.hand-left #dockPanelPhoto{left:54px}
       <button class="drill-btn" id="cpyFlipV" type="button">↕ Flip Vertical</button>
     </div>
     <button class="cup-detect-btn" id="cpyNewSelectionBtn" type="button">↺ New Selection</button>
+    <button class="cup-detect-btn" id="cpySaveCopyBtn" type="button" style="margin-top:0.4rem">💾 Save This Copy to Shelf</button>
   </div>
   <div class="cup-footer" id="cpySelectFooter">
     <button class="cup-btn cup-clear" id="cpyClearSelection" disabled>Clear selection</button>
   </div>
+    <details id="cpyShelf" style="margin-top:0.55rem;border-top:1px solid var(--border);padding-top:0.45rem">
+    <summary style="cursor:pointer;font-size:0.76rem;font-weight:700;color:var(--text);min-height:32px;display:flex;align-items:center">📎 Clipboard shelf <span id="cpyShelfCount" style="font-weight:400;color:var(--muted);margin-left:0.35rem"></span></summary>
+    <div class="small-note" style="margin:0.2rem 0 0.3rem">Kept on this device and available on any canvas.</div>
+    <div id="cpyShelfList" style="max-height:170px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem"></div>
+    <label style="display:block;font-size:0.7rem;margin-top:0.35rem;color:var(--muted)"><input type="checkbox" id="cpySnap"> Use only colors already in my key (otherwise missing colors get added)</label>
+  </details>
   <div class="cup-hint" id="cpyHint">Drag a rectangle to select an area, then Copy it or Reset it to the original. Hold Shift to add another, Alt to subtract.</div>
 </div>
 
@@ -4153,7 +4161,7 @@ function updateCopyPasteUI(){
     const n=selectedCells.size;
     cpyStatusEl.textContent=`${n} cell${n===1?'':'s'} selected`;
     cpyCopyBtn.disabled=(n===0);
-    { const rb=document.getElementById('cpyResetAreaBtn'); if(rb) rb.disabled=(n===0); const rr=document.getElementById('cpyRereadBtn'); if(rr) rr.disabled=(n===0); }
+    { const rb=document.getElementById('cpyResetAreaBtn'); if(rb) rb.disabled=(n===0); const rr=document.getElementById('cpyRereadBtn'); if(rr) rr.disabled=(n===0); const sb=document.getElementById('cpySaveBtn'); if(sb) sb.disabled=(n===0); }
     cpyClearSelectionBtn.disabled=(n===0);
     cpyHintEl.textContent='Drag a rectangle to select an area, then Copy it or Reset it to the original. Hold Shift to add another, Alt to subtract.';
   }
@@ -4320,7 +4328,7 @@ function drawPasteGhost(anchorRow,anchorCol){
       if(code===null) continue;
       const gr=anchorRow+r, gc=anchorCol+c;
       if(gr<0||gr>=gridH||gc<0||gc>=gridW) continue;
-      const entry=DMC[code];
+      const entry=DMC[code]||(clipExtra[code]?{h:clipExtra[code].hex}:null);
       if(!entry) continue;
       const x=gc*(cellPx+gap)+gap, y=gr*(cellPx+gap)+gap;
       ctx.globalAlpha=0.55;
@@ -4341,7 +4349,7 @@ function drawPasteGhost(anchorRow,anchorCol){
 function resolveDmcCodeToPaletteIndex(code){
   let idx=dmcMatches.findIndex(d=>d.code===code);
   if(idx===-1){
-    const entry=DMC_ENTRIES.find(d=>d.code===code);
+    const entry=DMC_ENTRIES.find(d=>d.code===code)||(typeof clipExtra!=='undefined'?clipExtra[code]:null);
     if(!entry) return -1;
     const [r,g,b]=hexToRgb(entry.hex);
     idx=palette.length;
@@ -4362,7 +4370,7 @@ function commitPaste(anchorRow,anchorCol){
       if(code===null) continue;
       const gr=anchorRow+r, gc=anchorCol+c;
       if(gr<0||gr>=gridH||gc<0||gc>=gridW) continue;
-      const idx=resolveDmcCodeToPaletteIndex(code);
+      const idx=clipResolve(code);
       if(idx>=0) indices[gr*gridW+gc]=idx;
     }
   }
@@ -4387,6 +4395,102 @@ diamondCanvas.addEventListener('click',e=>{
   if(!c) return;
   commitPaste(c.row,c.col);
 });
+
+// ── CLIPBOARD SHELF: named clips saved on this device (localStorage), usable on any canvas ──
+// A clip stores each cell's DMC code (plus color name/hex as a fallback), so it pastes correctly into a different
+// canvas. Colors the target canvas doesn't have are added to its key, unless "Use only colors already in my key" is on.
+const CLIP_KEY='studioClips', CLIP_SNAP_KEY='studioClipSnap', CLIP_MAX=40;
+let clipExtra={}; // code -> {code,name,hex,rgb} for codes the built-in catalog doesn't know
+let clipSnap=false; try{ clipSnap=localStorage.getItem(CLIP_SNAP_KEY)==='1'; }catch(e){}
+function loadClips(){ try{ const a=JSON.parse(localStorage.getItem(CLIP_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function storeClips(a){ try{ localStorage.setItem(CLIP_KEY,JSON.stringify(a)); return true; }catch(e){ flashShortcutToast("Couldn't save — this device's storage is full. Delete a clip and try again.",3200); return false; } }
+function clipHex(code){ return (DMC&&DMC[code]&&DMC[code].h)||(clipExtra[code]&&clipExtra[code].hex)||null; }
+function clipInfo(code){
+  const d=dmcMatches.find(x=>x.code===code); if(d) return {hex:d.hex,name:d.name};
+  if(DMC&&DMC[code]) return {hex:DMC[code].h,name:DMC[code].n};
+  if(clipExtra[code]) return {hex:clipExtra[code].hex,name:clipExtra[code].name};
+  return null;
+}
+// Turn a {w,h,grid} clipboard into a saved clip.
+function clipFromClipboard(cb,name){
+  const codes=[], map={}, cells=[], colors={};
+  for(let r=0;r<cb.h;r++)for(let c=0;c<cb.w;c++){
+    const code=cb.grid[r][c];
+    if(code===null||code===undefined){ cells.push(-1); continue; }
+    if(map[code]===undefined){ map[code]=codes.length; codes.push(code); const inf=clipInfo(code); if(inf) colors[code]=inf; }
+    cells.push(map[code]);
+  }
+  return {id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,w:cb.w,h:cb.h,codes,cells,colors,saved:Date.now()};
+}
+function clipToClipboard(clip){
+  const grid=[]; for(let r=0;r<clip.h;r++){ const row=[]; for(let c=0;c<clip.w;c++){ const v=clip.cells[r*clip.w+c]; row.push(v<0?null:clip.codes[v]); } grid.push(row); }
+  Object.keys(clip.colors||{}).forEach(code=>{ if(!(DMC&&DMC[code])&&!clipExtra[code]){ const col=clip.colors[code]; clipExtra[code]={code,name:col.name,hex:col.hex,rgb:hexToRgb(col.hex)}; } });
+  return {w:clip.w,h:clip.h,grid};
+}
+function saveClip(cb){
+  const clips=loadClips();
+  if(clips.length>=CLIP_MAX){ flashShortcutToast('The shelf is full ('+CLIP_MAX+' clips). Delete one first.',2800); return; }
+  const nm=prompt('Name this clip (for example: Face v3)','Clip '+(clips.length+1)); if(nm===null) return;
+  clips.unshift(clipFromClipboard(cb,(nm.trim()||'Clip '+(clips.length+1)).slice(0,40)));
+  if(storeClips(clips)){ renderClipShelf(); flashShortcutToast('💾 Saved to the shelf',1600); }
+}
+function clipThumb(clip){
+  const cv=document.createElement('canvas'), px=Math.max(1,Math.floor(54/Math.max(clip.w,clip.h))); cv.width=clip.w*px; cv.height=clip.h*px;
+  cv.style.cssText='width:'+Math.min(54,cv.width)+'px;height:auto;max-height:54px;image-rendering:pixelated;border:1px solid var(--border);border-radius:3px;flex-shrink:0;background:#f4f4f4';
+  const g=cv.getContext('2d');
+  for(let r=0;r<clip.h;r++)for(let c=0;c<clip.w;c++){ const v=clip.cells[r*clip.w+c]; if(v<0) continue; const col=clip.colors&&clip.colors[clip.codes[v]]; g.fillStyle=col?col.hex:'#999'; g.fillRect(c*px,r*px,px,px); }
+  return cv;
+}
+function useClip(clip){
+  if(!indices.length){ flashShortcutToast('Open or generate a canvas first',2000); return; }
+  if(!copyPasteMode) modeCopyPasteBtn.click();
+  clearSelection();
+  clipboard=clipToClipboard(clip);
+  pasteGhostCell=null; pasteFlipH=false; pasteFlipV=false;
+  cpyFlipHBtn.classList.remove('active'); cpyFlipVBtn.classList.remove('active');
+  redrawPreview(); updateCopyPasteUI();
+  flashShortcutToast('“'+clip.name+'” ready — tap the canvas where it should go',3000);
+}
+function renderClipShelf(){
+  const list=document.getElementById('cpyShelfList'); if(!list) return;
+  const clips=loadClips(); list.innerHTML=''; const cnt=document.getElementById('cpyShelfCount'); if(cnt) cnt.textContent=clips.length?'('+clips.length+')':'';
+  if(!clips.length){ const e=document.createElement('div'); e.className='small-note'; e.style.margin='0'; e.textContent='Nothing saved yet. Select an area (or copy one), then tap Save to Shelf.'; list.appendChild(e); return; }
+  clips.forEach(clip=>{
+    const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:0.4rem';
+    row.appendChild(clipThumb(clip));
+    const t=document.createElement('div'); t.style.cssText='flex:1;min-width:0;font-size:0.72rem;line-height:1.25';
+    t.innerHTML='<div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div><div style="color:var(--muted)">'+clip.w+'×'+clip.h+' · '+clip.codes.length+' colors</div>';
+    t.firstChild.textContent=clip.name; row.appendChild(t);
+    const use=document.createElement('button'); use.type='button'; use.className='cup-btn'; use.textContent='Use'; use.style.cssText='min-height:36px;padding:0 0.7rem';
+    use.addEventListener('click',()=>useClip(clip));
+    const del=document.createElement('button'); del.type='button'; del.className='cup-btn'; del.textContent='✕'; del.title='Delete this clip'; del.style.cssText='min-height:36px;padding:0 0.6rem';
+    del.addEventListener('click',()=>{ if(!confirm('Delete “'+clip.name+'” from the shelf?')) return; storeClips(loadClips().filter(x=>x.id!==clip.id)); renderClipShelf(); });
+    row.appendChild(use); row.appendChild(del); list.appendChild(row);
+  });
+}
+// Finds the palette slot for a pasted code: reuse it if it's on the canvas; otherwise snap to the nearest color already
+// in the key (when that option is on) or add it.
+function nearestExistingPaletteIdx(hex){
+  const rgb=hexToRgb(hex), counts=getCurrentCounts(); let best=-1,bd=Infinity;
+  palette.forEach((pc,i)=>{ if(hiddenColors.has(i)||(counts&&counts[i]<=0)) return; const d=colorDist(rgb,pc); if(d<bd){bd=d;best=i;} });
+  return best;
+}
+function clipResolve(code){
+  const have=dmcMatches.findIndex(d=>d.code===code); if(have!==-1) return have;
+  if(clipSnap){ const hx=clipHex(code); if(hx){ const n=nearestExistingPaletteIdx(hx); if(n>=0) return n; } }
+  return resolveDmcCodeToPaletteIndex(code);
+}
+{ const sn=document.getElementById('cpySnap'); if(sn){ sn.checked=clipSnap; sn.addEventListener('change',()=>{ clipSnap=sn.checked; try{ localStorage.setItem(CLIP_SNAP_KEY,clipSnap?'1':'0'); }catch(e){} }); } }
+document.getElementById('cpySaveBtn').addEventListener('click',()=>{
+  if(!selectedCells.size) return;
+  let r0=Infinity,r1=-1,c0=Infinity,c1=-1;
+  selectedCells.forEach(k=>{ const r=Math.floor(k/gridW),c=k%gridW; if(r<r0)r0=r; if(r>r1)r1=r; if(c<c0)c0=c; if(c>c1)c1=c; });
+  const w=c1-c0+1,h=r1-r0+1,grid=[];
+  for(let r=0;r<h;r++){ const row=[]; for(let c=0;c<w;c++){ const k=(r0+r)*gridW+(c0+c); row.push(selectedCells.has(k)&&dmcMatches[indices[k]]?dmcMatches[indices[k]].code:null); } grid.push(row); }
+  saveClip({w,h,grid});
+});
+document.getElementById('cpySaveCopyBtn').addEventListener('click',()=>{ if(clipboard) saveClip(clipboard); });
+renderClipShelf();
 
 // ── PHOTO SELECT PANE ────────────────────────────────────────────────────────
 // Shows the actual cropped source photo in its own labeled panel, right above
