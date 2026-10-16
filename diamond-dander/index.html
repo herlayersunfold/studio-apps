@@ -506,7 +506,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="fullscreenBtn" title="Hides the address bar, tabs, and everything else browser-chrome so the page fills the whole screen. Uses your browser's real fullscreen feature — press Escape any time to exit.">⛶ Fullscreen</button>
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-10-11n</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-10-11p</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -1338,13 +1338,25 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <div style="border-top:1px solid var(--border);margin-top:0.6rem;padding-top:0.5rem">
     <div style="font-size:0.78rem;font-weight:700">🎙 Voice note</div>
     <div class="small-note" id="recVoiceStatus" style="margin:0.15rem 0 0.35rem">Record a quick note about this pattern. It's saved as an audio file next to your videos.</div>
+    <label style="display:block;font-size:0.72rem;margin:0 0 0.35rem;color:var(--muted)"><input type="checkbox" id="recVoiceKeep" checked> Also keep it inside this project (so it opens with the project)</label>
     <button class="cup-detect-btn" id="recVoiceBtn" type="button">🎙 Start voice note</button>
+    <div id="recNotesWrap" style="display:none;margin-top:0.5rem"><div class="small-note" style="margin:0 0 0.2rem;font-weight:700;color:var(--text)">Notes saved in this project</div><div id="recNotes" style="display:flex;flex-direction:column;gap:0.3rem"></div><div class="small-note" id="recNotesHint" style="margin:0.25rem 0 0"></div></div>
   </div>
   <div style="border-top:1px solid var(--border);margin-top:0.6rem;padding-top:0.5rem">
     <div style="font-size:0.78rem;font-weight:700">🖥 Screen recording (tutorials / going live)</div>
     <div class="small-note" id="recScrStatus" style="margin:0.15rem 0 0.35rem">Records what's on your screen as you work. Your browser will ask which tab or window to share.</div>
     <label style="display:block;font-size:0.72rem;margin-bottom:0.35rem;color:var(--muted)"><input type="checkbox" id="recScrMic" checked> Include my voice (microphone)</label>
     <button class="cup-detect-btn" id="recScrBtn" type="button">🖥 Start screen recording</button>
+  </div>
+  <div style="border-top:1px solid var(--border);margin-top:0.6rem;padding-top:0.5rem">
+    <div style="font-size:0.78rem;font-weight:700">✨ Reveal video</div>
+    <div class="small-note" style="margin:0.15rem 0 0.35rem">Replays your finished pattern appearing piece by piece. Good for posting, and it doesn't depend on when you pressed Start.</div>
+    <div style="display:flex;gap:0.4rem;margin-bottom:0.35rem">
+      <label style="flex:1;font-size:0.72rem;color:var(--muted)">Style<select id="recRevStyle" style="font-size:0.72rem;width:100%"><option value="color">Color by color</option><option value="down">Top to bottom</option><option value="right">Left to right</option><option value="center">From the center</option><option value="sparkle">Sparkle</option></select></label>
+      <label style="flex:1;font-size:0.72rem;color:var(--muted)">Length<select id="recRevLen" style="font-size:0.72rem;width:100%"><option value="10">10 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option></select></label>
+    </div>
+    <div class="small-note" id="recRevStatus" style="margin:0 0 0.35rem"></div>
+    <button class="cup-detect-btn" id="recRevBtn" type="button">✨ Make reveal video</button>
   </div>
   <div id="recLogWrap" style="display:none;border-top:1px solid var(--border);margin-top:0.6rem;padding-top:0.4rem">
     <div class="small-note" style="margin:0 0 0.2rem;font-weight:700;color:var(--text)">Saved this session</div>
@@ -1377,7 +1389,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 // BUILD MARKER — used only to confirm which copy of this file is actually
 // running when troubleshooting. Check it any time by opening DevTools
 // Console (F12) and typing BUILD_VERSION, then pressing Enter.
-const BUILD_VERSION='2026-10-11n-crisp';
+const BUILD_VERSION='2026-10-11p-crisp';
 console.log('Diamond Dander Art Studio build:', BUILD_VERSION);
 // ── DMC COLOR DATABASE ────────────────────────────────────────────────────────
 const DMC_DIAMOND = {'150':{n:'Dusty Rose Ult Vy Dk',h:'#AB1A5F'},'151':{n:'Dusty Rose Vy Lt',h:'#F4C0D1'},'152':{n:'Tawny Dark',h:'#B5806A'},'153':{n:'Violet Vy Lt',h:'#E8CCE0'},'154':{n:'Grape Vy Dk',h:'#3D1F3D'},'155':{n:'Soft Violet',h:'#7B6EA0'},'156':{n:'Blue Violet Med Lt',h:'#A0A8D0'},'157':{n:'Blue Light',h:'#A0B4D0'},'158':{n:'Cornflower Blue Md Vy Dk',h:'#2A3A6A'},'159':{n:'Blue Gray Light',h:'#C0C8D8'},'160':{n:'Blue Gray Med',h:'#8090A8'},'161':{n:'Petrol Blue Dark',h:'#304858'},'162':{n:'Light Glacier',h:'#D8ECF0'},'163':{n:'Dark Beryl',h:'#5A8C6A'},'164':{n:'Pastel Green',h:'#A8CCA8'},'165':{n:'Pale Yellow',h:'#F0F0A0'},'166':{n:'Moss Green Md Lt',h:'#8CAA38'},'167':{n:'Yellow Beige Vy Dk',h:'#906030'},'168':{n:'Silver Gray',h:'#C0C0C0'},'169':{n:'Pewter Light',h:'#A8A8A8'},'208':{n:'Lavender Vy Dk',h:'#7A5090'},'209':{n:'Mid Lilac',h:'#9070B0'},'210':{n:'Lilac',h:'#B090C8'},'211':{n:'Lavender Light',h:'#D0B8E0'},'221':{n:'Sangria',h:'#8C1A2A'},'223':{n:'Soft Pink Light',h:'#D89090'},'224':{n:'Soft Pink',h:'#E0A8A0'},'225':{n:'Soft Pink Vy Lt',h:'#F0D0C8'},'300':{n:'Dark Brown',h:'#6B2A10'},'301':{n:'Dark Ochre',h:'#A06030'},'304':{n:'Red Medium',h:'#B81830'},'307':{n:'Lemon',h:'#F8EC60'},'309':{n:'Rose Dark',h:'#C04060'},'310':{n:'Black',h:'#000000'},'311':{n:'Wedgewood Ult Vy Dk',h:'#1A3858'},'312':{n:'Mid Oriental Blue',h:'#2A5888'},'315':{n:'Antique Mauve Md Dk',h:'#7A4858'},'316':{n:'Antique Mauve Med',h:'#A06878'},'317':{n:'Pewter Gray',h:'#787878'},'318':{n:'Steel Gray Lt',h:'#A8AAB0'},'319':{n:'Pistachio Green Vy Dk',h:'#2A5030'},'320':{n:'Pistachio Green Med',h:'#608060'},'321':{n:'Crimson',h:'#D81820'},'322':{n:'Baby Blue Dark',h:'#5888B0'},'326':{n:'Rose Very Dark',h:'#C02050'},'327':{n:'Violet Dark',h:'#5A2070'},'333':{n:'Blue Violet Very Dark',h:'#3A2870'},'334':{n:'Baby Blue Medium',h:'#78A8D0'},'335':{n:'Rose',h:'#D84070'},'336':{n:'Navy Blue',h:'#183068'},'340':{n:'Blue Violet Medium',h:'#8878B8'},'341':{n:'Blue Violet Light',h:'#A8A0D0'},'347':{n:'Salmon Vy Dark',h:'#C02020'},'349':{n:'Coral Dark',h:'#C02830'},'350':{n:'Coral Medium',h:'#D04040'},'351':{n:'Coral',h:'#E06050'},'352':{n:'Coral Light',h:'#F08878'},'353':{n:'Light Blush',h:'#F8C0B0'},'355':{n:'Terra Cotta Med Dark',h:'#904030'},'356':{n:'Terra Cotta Medium',h:'#B06050'},'367':{n:'Pistachio Green Dk',h:'#507050'},'368':{n:'Pistachio Green Lt',h:'#90B890'},'369':{n:'Pistachio Green Vy Lt',h:'#C8E0C8'},'370':{n:'Mustard Medium',h:'#A08030'},'371':{n:'Mustard',h:'#B09038'},'372':{n:'Mustard Light',h:'#C0A848'},'400':{n:'Ochre',h:'#A06820'},'402':{n:'Light Ochre',h:'#E09060'},'407':{n:'Desert Sand Med',h:'#C09070'},'413':{n:'Pewter Gray Dark',h:'#585858'},'414':{n:'Steel Gray Dark',h:'#888888'},'415':{n:'Pearl Gray',h:'#D0D0D0'},'420':{n:'Mocha',h:'#906840'},'422':{n:'Sand',h:'#C0A870'},'433':{n:'Brown',h:'#7A4020'},'434':{n:'Brown Light',h:'#905030'},'435':{n:'Dark Latte',h:'#A86030'},'436':{n:'Tan',h:'#C08050'},'437':{n:'Medium Latte',h:'#D0A060'},'444':{n:'Lemon Dark',h:'#F0D000'},'445':{n:'Lemon Light',h:'#F8F090'},'451':{n:'Shell Gray Dark',h:'#907870'},'452':{n:'Shell Gray Med',h:'#B09890'},'453':{n:'Shell Gray Light',h:'#D0C0B8'},'469':{n:'Avocado Green',h:'#708040'},'470':{n:'Avocado Green Lt',h:'#90A050'},'471':{n:'Avocado Green Vy Lt',h:'#B0C070'},'472':{n:'Avocado Green Ultra Vy Lt',h:'#D0E090'},'498':{n:'Burgundy',h:'#780020'},'500':{n:'Dark Pine Green',h:'#204830'},'501':{n:'Blue Green Dark',h:'#306050'},'502':{n:'Blue Green',h:'#508070'},'503':{n:'Blue Green Med',h:'#70A090'},'505':{n:'Jade Green',h:'#388060'},'517':{n:'Wedgewood Dark',h:'#2868A0'},'518':{n:'Wedgewood Light',h:'#4890C0'},'519':{n:'Heavenly Blue',h:'#78B0D0'},'520':{n:'Fern Green Dark',h:'#486040'},'522':{n:'Fern Green',h:'#708060'},'523':{n:'Fern Green Lt',h:'#90A070'},'524':{n:'Fern Green Vy Lt',h:'#B0C090'},'535':{n:'Ash Gray Vy Lt',h:'#909090'},'543':{n:'Beige Brown Ult Vy Lt',h:'#E8D8C8'},'550':{n:'Violet Very Dark',h:'#400870'},'552':{n:'Violet Medium',h:'#703090'},'553':{n:'Violet',h:'#9050B0'},'554':{n:'Violet Light',h:'#C090D0'},'561':{n:'Juniper',h:'#2A6050'},'562':{n:'Jade Medium',h:'#509070'},'563':{n:'Jade Light',h:'#78B090'},'564':{n:'Jade Very Light',h:'#A8D0B8'},'580':{n:'Moss Green Dk',h:'#606820'},'581':{n:'Moss Green',h:'#788030'},'597':{n:'Turquoise',h:'#3898A0'},'598':{n:'Turquoise Light',h:'#70C0C8'},'600':{n:'Cranberry Very Dark',h:'#C01860'},'601':{n:'Cranberry Dark',h:'#D02070'},'602':{n:'Cranberry Medium',h:'#E03080'},'603':{n:'Cranberry',h:'#F04090'},'604':{n:'Cranberry Light',h:'#F878B0'},'605':{n:'Cranberry Very Light',h:'#FDB0D0'},'606':{n:'Sunset',h:'#F03010'},'608':{n:'Burnt Bright Orange',h:'#E84010'},'610':{n:'Drab Brown Dk',h:'#806040'},'611':{n:'Drab Brown',h:'#987850'},'612':{n:'Drab Brown Lt',h:'#B89870'},'613':{n:'Drab Brown Vy Lt',h:'#D8C090'},'632':{n:'Desert Sand Ult Vy Dk',h:'#906050'},'640':{n:'Beige Gray Vy Dk',h:'#706860'},'642':{n:'Beige Gray Dark',h:'#988878'},'644':{n:'Beige Gray Med',h:'#C0B0A0'},'645':{n:'Beige Gray Vy Dk',h:'#686058'},'646':{n:'Beaver Gray Dark',h:'#807870'},'647':{n:'Beaver Gray Medium',h:'#A09888'},'648':{n:'Beaver Gray Light',h:'#C0B8A8'},'666':{n:'Red Bright',h:'#E80020'},'676':{n:'Old Gold Lt',h:'#D0B870'},'677':{n:'Old Gold Very Light',h:'#E8D8A0'},'680':{n:'Old Gold Dark',h:'#A08030'},'699':{n:'Dark Kelly Green',h:'#006020'},'700':{n:'Med Kelly Green',h:'#108030'},'701':{n:'Kelly Green Light',h:'#28A040'},'702':{n:'Kelly Green',h:'#38B850'},'703':{n:'Chartreuse',h:'#70C840'},'704':{n:'Chartreuse Bright',h:'#90E050'},'712':{n:'Cream',h:'#F8F0E0'},'718':{n:'Plum',h:'#900060'},'720':{n:'Orange Spice Dark',h:'#C85010'},'721':{n:'Orange Spice Med',h:'#E07020'},'722':{n:'Orange Spice Light',h:'#F09840'},'725':{n:'Topaz',h:'#F0B030'},'726':{n:'Topaz Light',h:'#F8C840'},'727':{n:'Topaz Very Light',h:'#FDE880'},'728':{n:'Topaz Med Dark',h:'#D09020'},'729':{n:'Old Gold Medium',h:'#C09830'},'730':{n:'Olive Green Very Dark',h:'#587010'},'732':{n:'Olive Green',h:'#708020'},'733':{n:'Olive Green Med',h:'#90A030'},'734':{n:'Olive Green Light',h:'#B0C048'},'738':{n:'Tan Very Light',h:'#E8C898'},'739':{n:'Tan Ultra Very Light',h:'#F0DEB8'},'740':{n:'Tangerine',h:'#F07010'},'741':{n:'Tangerine Medium',h:'#F09020'},'742':{n:'Tangerine Light',h:'#F8B030'},'743':{n:'Yellow Med',h:'#F8D050'},'744':{n:'Yellow Pale',h:'#F8E080'},'745':{n:'Yellow Pale Light',h:'#F8F0A0'},'746':{n:'Off White',h:'#F8F4E8'},'747':{n:'Peacock Blue Vy Lt',h:'#D0F0F0'},'754':{n:'Peach Light',h:'#F8C8B0'},'758':{n:'Terra Cotta Very Light',h:'#E8B098'},'760':{n:'Salmon',h:'#F09080'},'761':{n:'Salmon Light',h:'#F8B0A0'},'762':{n:'Pearl Gray Very Light',h:'#E8E8E8'},'772':{n:'Yellow Green Vy Lt',h:'#D8E8B0'},'775':{n:'Baby Blue',h:'#D0E8F8'},'777':{n:'Raspberry Very Dark',h:'#8C1038'},'778':{n:'Antique Mauve Vy Lt',h:'#D8B0B8'},'779':{n:'Dark Java',h:'#604840'},'780':{n:'Topaz Ultra Vy Dk',h:'#906010'},'782':{n:'Topaz Dark',h:'#B07820'},'783':{n:'Topaz Medium',h:'#C89030'},'791':{n:'Cornflower Blue Very Dark',h:'#203870'},'792':{n:'Cornflower Blue Dark',h:'#304888'},'793':{n:'Cornflower Blue Med',h:'#5070A8'},'794':{n:'Cornflower Blue Light',h:'#8098C8'},'796':{n:'Royal Blue Dark',h:'#083888'},'797':{n:'Royal Blue',h:'#1048A0'},'798':{n:'Delft Blue Dark',h:'#2858A8'},'799':{n:'Delft Blue Medium',h:'#5080C0'},'800':{n:'Delft Blue Pale',h:'#A0C0E0'},'801':{n:'Coffee Brown Dark',h:'#603020'},'803':{n:'Baby Blue Ult Vy Dk',h:'#384870'},'807':{n:'Peacock Blue',h:'#40A0B0'},'809':{n:'Delft Blue',h:'#6090C0'},'813':{n:'Blue Light',h:'#90B8D8'},'814':{n:'Garnet Dark',h:'#780020'},'815':{n:'Garnet Medium',h:'#880020'},'816':{n:'Garnet',h:'#980820'},'817':{n:'Red',h:'#C81010'},'818':{n:'Baby Pink',h:'#FDD8D8'},'819':{n:'Baby Pink Light',h:'#FDE8E8'},'820':{n:'Royal Blue Vy Dark',h:'#082870'},'822':{n:'Beige Gray Light',h:'#E0D8C8'},'823':{n:'Midnight Blue',h:'#102058'},'824':{n:'Blue Very Dark',h:'#184880'},'825':{n:'Denim',h:'#285890'},'826':{n:'Blue Medium',h:'#4878A8'},'827':{n:'Glacier Blue',h:'#A8C8E8'},'828':{n:'Blue Ultra Very Light',h:'#C8E0F0'},'829':{n:'Golden Olive Vy Dk',h:'#706020'},'830':{n:'Golden Olive Dk',h:'#887830'},'831':{n:'Golden Olive Md',h:'#A09040'},'832':{n:'Golden Olive',h:'#B8A850'},'833':{n:'Golden Olive Lt',h:'#D0C060'},'834':{n:'Golden Olive Vy Lt',h:'#E8D878'},'838':{n:'Beige Brown Vy Dk',h:'#604838'},'839':{n:'Beige Brown Dark',h:'#785848'},'840':{n:'Beige Brown Med',h:'#907060'},'841':{n:'Beige Brown Lt',h:'#B09080'},'842':{n:'Beige Brown Vy Lt',h:'#D0B8A0'},'844':{n:'Beaver Gray Ultra Dark',h:'#484848'},'869':{n:'Hazelnut Brown Vy Dk',h:'#785030'},'890':{n:'Pistachio Green Ult Vy Dk',h:'#184028'},'891':{n:'Carnation Dark',h:'#E83060'},'892':{n:'Carnation Medium',h:'#F05070'},'893':{n:'Carnation Light',h:'#F87888'},'894':{n:'Carnation Very Light',h:'#FDA0A8'},'895':{n:'Hunter Green Vy Dk',h:'#184828'},'898':{n:'Coffee Brown Vy Dk',h:'#401808'},'899':{n:'Rose Medium',h:'#E06880'},'900':{n:'Burnt Orange Dark',h:'#B03010'},'902':{n:'Dark Garnet',h:'#600018'},'904':{n:'Parrot Green Very Dark',h:'#308040'},'905':{n:'Parrot Green Dk',h:'#409850'},'906':{n:'Parrot Green Md',h:'#58B060'},'907':{n:'Parrot Green Lt',h:'#88D070'},'909':{n:'Dark Emerald',h:'#006830'},'910':{n:'Emerald Green',h:'#008040'},'911':{n:'Emerald Green Med',h:'#00A050'},'912':{n:'Emerald Green Lt',h:'#20C060'},'913':{n:'Nile Green Med',h:'#78C878'},'915':{n:'Plum Dark',h:'#780050'},'917':{n:'Plum Medium',h:'#A00060'},'918':{n:'Red Copper Dark',h:'#802818'},'919':{n:'Red Copper',h:'#983020'},'920':{n:'Copper Medium',h:'#A84028'},'921':{n:'Copper',h:'#C05030'},'922':{n:'Copper Light',h:'#D07040'},'924':{n:'Gray Green Vy Dark',h:'#405848'},'926':{n:'Gray Green Med',h:'#788880'},'927':{n:'Gray Green Light',h:'#A0B0A8'},'928':{n:'Gray Green Vy Lt',h:'#C8D0C8'},'930':{n:'Antique Blue Dark',h:'#385878'},'931':{n:'Antique Blue Medium',h:'#507898'},'932':{n:'Antique Blue Light',h:'#80A0B8'},'934':{n:'Dark Forest',h:'#304830'},'935':{n:'Avocado Green Dark',h:'#485828'},'936':{n:'Avocado Green Very Dark',h:'#384820'},'937':{n:'Avocado Green Md',h:'#607838'},'938':{n:'Coffee Brown Ult Dk',h:'#301008'},'939':{n:'Navy Blue Very Dark',h:'#081848'},'943':{n:'Green Bright Medium',h:'#00B080'},'945':{n:'Tawny Med',h:'#E0A880'},'946':{n:'Burnt Orange Med',h:'#D04810'},'947':{n:'Dark Orange',h:'#E05810'},'948':{n:'Peach Very Light',h:'#FDE8D8'},'950':{n:'Desert Sand Light',h:'#E8C8A8'},'951':{n:'Tawny Light',h:'#F0D0A8'},'954':{n:'Nile Green',h:'#98D098'},'955':{n:'Nile Green Light',h:'#B8E8B8'},'956':{n:'Geranium',h:'#F05878'},'957':{n:'Geranium Pale',h:'#F898A8'},'958':{n:'Sea Green Dark',h:'#20A888'},'959':{n:'Sea Green Medium',h:'#40C0A0'},'961':{n:'Dusty Rose Dark',h:'#C86080'},'962':{n:'Dusty Rose Medium',h:'#E08098'},'963':{n:'Dusty Rose Ult Vy Lt',h:'#FDD8E8'},'964':{n:'Sea Green Light',h:'#88D8C8'},'966':{n:'Jade Ultra Vy Lt',h:'#C8E8D0'},'967':{n:'Apricot Very Light',h:'#FDD0B0'},'970':{n:'Pumpkin Light',h:'#F07820'},'971':{n:'Pumpkin',h:'#E86010'},'972':{n:'Canary Deep',h:'#F8B010'},'973':{n:'Canary Bright',h:'#F8D000'},'975':{n:'Golden Brown Dark',h:'#906828'},'976':{n:'Golden Brown Med',h:'#B08038'},'977':{n:'Golden Brown Light',h:'#D0A050'},'986':{n:'Forest Green Vy Dk',h:'#284828'},'987':{n:'Forest Green Dk',h:'#385838'},'988':{n:'Forest Green Med',h:'#508050'},'989':{n:'Forest Green',h:'#68A068'},'991':{n:'Aquamarine Dark',h:'#308070'},'992':{n:'Aquamarine Lt',h:'#60B0A0'},'993':{n:'Aquamarine Vy Lt',h:'#90D0C0'},'995':{n:'Electric Blue Dark',h:'#0880C0'},'996':{n:'Electric Blue Medium',h:'#28A0E0'},'3011':{n:'Khaki Green Dk',h:'#706840'},'3012':{n:'Khaki Green Md',h:'#909060'},'3013':{n:'Khaki Green Lt',h:'#B0B080'},'3021':{n:'Brown Gray Vy Dk',h:'#484038'},'3022':{n:'Brown Gray Med',h:'#808070'},'3023':{n:'Brown Gray Light',h:'#A8A090'},'3024':{n:'Brown Gray Vy Lt',h:'#D0C8B8'},'3031':{n:'Mocha Brown Vy Dk',h:'#483020'},'3032':{n:'Mocha Brown Med',h:'#B09070'},'3033':{n:'Mocha Brown Vy Lt',h:'#E0C8A8'},'3041':{n:'Mushroom',h:'#907888'},'3042':{n:'Pale Mushroom',h:'#B8A0A8'},'3045':{n:'Yellow Beige Dk',h:'#C0A058'},'3046':{n:'Yellow Beige Med',h:'#D8B870'},'3047':{n:'Yellow Beige Lt',h:'#E8D098'},'3051':{n:'Green Gray Dark',h:'#586048'},'3052':{n:'Green Gray Med',h:'#789068'},'3053':{n:'Green Gray',h:'#98A888'},'3064':{n:'Desert Sand',h:'#C89070'},'3072':{n:'Beaver Gray Very Light',h:'#E0E0D8'},'3078':{n:'Primrose Yellow',h:'#F8F8C0'},'3325':{n:'Baby Blue Light',h:'#B8D8F0'},'3326':{n:'Rose Light',h:'#F8A0B0'},'3328':{n:'Salmon Dark',h:'#D86060'},'3340':{n:'Deep Coral',h:'#E05040'},'3341':{n:'Coral',h:'#F07060'},'3345':{n:'Hunter Green Dk',h:'#207030'},'3346':{n:'Hunter Green',h:'#308840'},'3347':{n:'Yellow Green Med',h:'#78A848'},'3348':{n:'Yellow Green Lt',h:'#B0C878'},'3350':{n:'Dusty Rose Ultra Dark',h:'#B03060'},'3354':{n:'Dusty Rose Light',h:'#E898A8'},'3362':{n:'Pine Green Dk',h:'#486040'},'3363':{n:'Pine Green Md',h:'#608050'},'3364':{n:'Pine Green',h:'#78A060'},'3371':{n:'Black Brown',h:'#180800'},'3607':{n:'Puce',h:'#C03070'},'3608':{n:'Light Puce',h:'#E070A0'},'3609':{n:'Plum Ultra Light',h:'#F0B0D0'},'3685':{n:'Mauve Very Dark',h:'#801840'},'3687':{n:'Mauve',h:'#B04868'},'3688':{n:'Mauve Medium',h:'#D07090'},'3689':{n:'Mauve Light',h:'#F0A0B8'},'3705':{n:'Melon Dark',h:'#F05060'},'3706':{n:'Melon Medium',h:'#F88090'},'3708':{n:'Melon Light',h:'#FDB0B8'},'3712':{n:'Salmon Medium',h:'#E07868'},'3713':{n:'Salmon Very Light',h:'#F8C8C0'},'3716':{n:'Dusty Rose Med Vy Lt',h:'#F8B0C0'},'3721':{n:'Shell Pink Dark',h:'#A04050'},'3722':{n:'Shell Pink Med',h:'#C06070'},'3726':{n:'Rose Quartz',h:'#B07080'},'3727':{n:'Rose Quartz Light',h:'#D0A0A8'},'3731':{n:'Dusty Rose Very Dark',h:'#C05070'},'3733':{n:'Dusty Rose',h:'#E07890'},'3740':{n:'Antique Violet Dark',h:'#604060'},'3743':{n:'Antique Violet Vy Lt',h:'#C8B8C8'},'3746':{n:'Blue Violet Dark',h:'#6858A0'},'3747':{n:'Blue Violet Vy Lt',h:'#C0C0E8'},'3750':{n:'Antique Blue Very Dk',h:'#203050'},'3752':{n:'Antique Blue Very Light',h:'#B0C0D8'},'3753':{n:'Antique Blue Ult Vy Lt',h:'#D0DCE8'},'3755':{n:'Baby Blue',h:'#88B8D8'},'3756':{n:'Ice Blue',h:'#E8F4F8'},'3760':{n:'Wedgewood Med',h:'#3878A8'},'3761':{n:'Sky Blue Light',h:'#98C8E0'},'3765':{n:'Peacock Blue Vy Dk',h:'#187888'},'3766':{n:'Peacock Blue Light',h:'#68B8C8'},'3768':{n:'Gray Green Dark',h:'#607070'},'3770':{n:'Tawny Vy Light',h:'#F8E0C8'},'3771':{n:'Terra Cotta Ult Vy Lt',h:'#F0C8B0'},'3772':{n:'Desert Sand Vy Dark',h:'#905040'},'3774':{n:'Desert Sand Vy Lt',h:'#F0D8C0'},'3776':{n:'Ochre Med',h:'#C07828'},'3777':{n:'Terra Cotta Dark',h:'#803028'},'3778':{n:'Terra Cotta Light',h:'#D09080'},'3779':{n:'Rosewood Ult Vy Lt',h:'#F8D0C8'},'3781':{n:'Mocha Brown Dk',h:'#706050'},'3782':{n:'Mocha Brown Lt',h:'#D0C0A8'},'3787':{n:'Brown Gray Dark',h:'#605850'},'3790':{n:'Beige Gray Ult Dk',h:'#584840'},'3799':{n:'Pewter Gray Vy Dk',h:'#484848'},'3801':{n:'Melon Very Dark',h:'#D03048'},'3802':{n:'Antique Mauve Vy Dk',h:'#603048'},'3803':{n:'Mauve Dark',h:'#983058'},'3804':{n:'Dark Cyclamen',h:'#E01880'},'3805':{n:'Mid Cyclamen',h:'#E83898'},'3806':{n:'Light Cyclamen',h:'#F870B8'},'3807':{n:'Cornflower Blue',h:'#6070A8'},'3808':{n:'Turquoise Ult Vy Dk',h:'#186880'},'3809':{n:'Turquoise Vy Dark',h:'#208898'},'3810':{n:'Dark Turquoise',h:'#38A8B8'},'3811':{n:'Turquoise Very Light',h:'#B8E0E8'},'3812':{n:'Sea Green Vy Dk',h:'#188070'},'3813':{n:'Blue Green Lt',h:'#90C8B8'},'3814':{n:'Aquamarine',h:'#50A090'},'3815':{n:'Celadon Green Dk',h:'#408060'},'3816':{n:'Celadon Green',h:'#60A080'},'3817':{n:'Celadon Green Lt',h:'#90C0A0'},'3818':{n:'Emerald Green Ult V Dk',h:'#005828'},'3819':{n:'Bright Lime',h:'#D0E050'},'3820':{n:'Straw Dark',h:'#E0B040'},'3821':{n:'Straw',h:'#F0C848'},'3822':{n:'Straw Light',h:'#F8D870'},'3823':{n:'Yellow Ultra Pale',h:'#FFFFF0'},'3824':{n:'Apricot Light',h:'#FDC8A0'},'3825':{n:'Pumpkin Pale',h:'#FDB870'},'3826':{n:'Golden Brown',h:'#C09038'},'3827':{n:'Golden Brown Pale',h:'#F0C870'},'3828':{n:'Hazelnut Brown',h:'#B08848'},'3829':{n:'Old Gold Vy Dk',h:'#907020'},'3830':{n:'Terra Cotta',h:'#B04838'},'3831':{n:'Raspberry Dark',h:'#A02040'},'3832':{n:'Raspberry Medium',h:'#C03050'},'3833':{n:'Raspberry Light',h:'#E06070'},'3834':{n:'Grape Dark',h:'#602060'},'3835':{n:'Grape Medium',h:'#803080'},'3836':{n:'Grape Light',h:'#B060A8'},'3837':{n:'Lavender Ultra Dark',h:'#502870'},'3838':{n:'Lavender Blue Dark',h:'#384880'},'3839':{n:'Lavender Blue Med',h:'#5868A0'},'3840':{n:'Lavender Blue Light',h:'#8898C8'},'3841':{n:'Baby Blue Pale',h:'#C8E0F0'},'3842':{n:'Wedgewood Vry Dk',h:'#205878'},'3843':{n:'Electric Blue',h:'#1090D8'},'3844':{n:'Turquoise Bright Dark',h:'#00B0C8'},'3845':{n:'Turquoise Bright Med',h:'#20C8E0'},'3846':{n:'Turquoise Bright Light',h:'#60E0F0'},'3847':{n:'Teal Green Dark',h:'#207868'},'3848':{n:'Teal Green Med',h:'#389888'},'3849':{n:'Teal Green Light',h:'#60B8A8'},'3850':{n:'Green Bright Dark',h:'#30A878'},'3851':{n:'Green Bright Light',h:'#60C898'},'3852':{n:'Straw Very Dark',h:'#C09820'},'3853':{n:'Autumn Gold Dark',h:'#E07818'},'3854':{n:'Autumn Gold Med',h:'#F09030'},'3855':{n:'Autumn Gold Lt',h:'#F8B048'},'3856':{n:'Mahogany Ult Vy Lt',h:'#FDD0B0'},'3857':{n:'Rosewood Dark',h:'#601820'},'3858':{n:'Rosewood Med',h:'#883038'},'3859':{n:'Rosewood Light',h:'#B06068'},'3860':{n:'Java',h:'#806050'},'3861':{n:'Light Java',h:'#A08070'},'3862':{n:'Mocha Beige Dark',h:'#807060'},'3863':{n:'Mocha Beige Med',h:'#A09080'},'3864':{n:'Mocha Beige Light',h:'#C0B0A0'},'3865':{n:'Winter White',h:'#F8F8F0'},'3866':{n:'Mocha Brn Ult Vy Lt',h:'#F0E8D8'},'3868':{n:'Ecru',h:'#F0E8D0'},'5200':{n:'Snow White',h:'#FFFFFF'}};
@@ -2796,7 +2808,7 @@ if(typeof ResizeObserver!=='undefined'){
 uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag')});
 uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag'));
 uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadFile(f)});
-fileInput.addEventListener('change',()=>{if(fileInput.files[0])loadFile(fileInput.files[0])});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0]){ window.__voiceNotes=[]; if(window.__renderVoiceNotes) window.__renderVoiceNotes(); loadFile(fileInput.files[0]); }});
 document.getElementById('reuploadInput').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0])});
 
 function loadFile(file){
@@ -8292,6 +8304,7 @@ function buildProjectData(){
     hiddenColorCells,
     scatterCells:[...scatterCells],
     currentPatternPhotoRegion,
+    voiceNotes:(window.__voiceNotes&&window.__voiceNotes.length)?window.__voiceNotes:undefined,
     indices
   };
 }
@@ -8331,6 +8344,7 @@ function refreshSliderLabels(){
 
 function restoreProject(data){
   clearResizeNewPhoto();
+  window.__voiceNotes=Array.isArray(data&&data.voiceNotes)?data.voiceNotes.filter(n=>n&&typeof n.data==='string'):[]; if(window.__renderVoiceNotes) window.__renderVoiceNotes();
   const s=data.settings||{};
   const setVal=(id,v)=>{ if(v===undefined||v===null) return; const el=document.getElementById(id); if(el) el.value=v; };
 
@@ -10206,8 +10220,10 @@ document.getElementById('streamModeBtn')?.addEventListener('click',()=>{
       stream.getTracks().forEach(t=>t.stop()); VN.rec=null; btn.textContent='🎙 Start voice note';
       const type=(rec.mimeType||mime||'audio/webm').split(';')[0], ext=type.indexOf('mp4')>-1?'m4a':'webm';
       const name=baseName('voice note')+'.'+ext;
-      const where=await saveBlob(new Blob(chunks,{type}),name);
+      const blobV=new Blob(chunks,{type}), durV=(Date.now()-VN.t0)/1000;
+      const where=await saveBlob(blobV,name);
       st.textContent='Saved. Record another any time.'; addLog(name,where);
+      if($('recVoiceKeep').checked) await keepNote(blobV,type,durV);
     };
     VN.rec=rec; VN.t0=Date.now(); rec.start(); btn.textContent='■ Stop & save voice note';
   });
@@ -10242,6 +10258,105 @@ document.getElementById('streamModeBtn')?.addEventListener('click',()=>{
     screen.getVideoTracks()[0].addEventListener('ended',()=>{ if(SR.rec&&SR.rec.state!=='inactive') SR.rec.stop(); }); // the browser's own "Stop sharing" button
     SR.rec=rec; SR.t0=Date.now(); rec.start(1000); btn.textContent='■ Stop & save screen recording';
   });
+
+
+  // ── reveal video: the finished canvas appearing piece by piece ──
+  let revBusy=false;
+  $('recRevBtn').addEventListener('click',async()=>{
+    const st=$('recRevStatus'), btn=$('recRevBtn');
+    if(revBusy||TL.encoding) return;
+    const src=$('diamondCanvas');
+    if(!indices.length||!src||!src.width){ st.textContent='Open or generate a canvas first.'; return; }
+    const mime=pickVideoMime(); if(!mime){ st.textContent="This browser can't make video files."; return; }
+    revBusy=true; btn.disabled=true;
+    try{
+      await ensureFolderPermission();
+      const style=$('recRevStyle').value, secs=parseInt($('recRevLen').value)||20, fps=15;
+      // output size, and the final picture as pixels
+      const sc=Math.min(1,1080/Math.max(src.width,src.height));
+      const W=Math.max(2,Math.round(src.width*sc/2)*2), H=Math.max(2,Math.round(src.height*sc/2)*2);
+      const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H; const tx=tmp.getContext('2d');
+      tx.fillStyle='#ffffff'; tx.fillRect(0,0,W,H); tx.drawImage(src,0,0,W,H);
+      const fin=new Uint32Array(tx.getImageData(0,0,W,H).data.buffer.slice(0));
+      // reveal order for every cell (0..1), then spread to pixels
+      const cellKey=new Float32Array(gridW*gridH);
+      if(style==='color'){
+        const counts={}; indices.forEach(v=>{ counts[v]=(counts[v]||0)+1; });
+        const order=Object.keys(counts).map(Number).sort((a,b)=>(symbolRank[a]!==undefined&&symbolRank[b]!==undefined)?symbolRank[a]-symbolRank[b]:a-b);
+        const seen={}; const n=order.length;
+        order.forEach(()=>{}); const pos={}; order.forEach((ci,i)=>{ pos[ci]=i; seen[ci]=0; });
+        for(let k=0;k<indices.length;k++){ const ci=indices[k]; cellKey[k]=(pos[ci]+(seen[ci]++)/counts[ci])/n; }
+      }else{
+        for(let r=0;r<gridH;r++)for(let c=0;c<gridW;c++){
+          const k=r*gridW+c; let v;
+          if(style==='down') v=(r+c/gridW)/gridH;
+          else if(style==='right') v=(c+r/gridH)/gridW;
+          else if(style==='center'){ const dx=(c+0.5)/gridW-0.5, dy=(r+0.5)/gridH-0.5; v=Math.min(1,Math.sqrt(dx*dx+dy*dy)/0.7071); }
+          else v=Math.random();
+          cellKey[k]=v;
+        }
+      }
+      const cw=(src.width-1)/gridW, ch=(src.height-1)/gridH, kx=src.width/W, ky=src.height/H;
+      const key=new Float32Array(W*H);
+      for(let y=0;y<H;y++){ const r=Math.min(gridH-1,Math.max(0,Math.floor((y*ky-1)/ch))); for(let x=0;x<W;x++){ const c=Math.min(gridW-1,Math.max(0,Math.floor((x*kx-1)/cw))); key[y*W+x]=cellKey[r*gridW+c]; } }
+      const bg=0xFFF2F2F2|0; // light grey (ABGR)
+      const out=document.createElement('canvas'); out.width=W; out.height=H; const ox=out.getContext('2d');
+      const img=ox.createImageData(W,H), px=new Uint32Array(img.data.buffer);
+      const stream=out.captureStream(fps), chunks=[];
+      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5000000});
+      rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+      const stopped=new Promise(r=>{ rec.onstop=r; });
+      rec.start(500);
+      const total=Math.round(secs*fps), hold=fps*2, draw=Math.round(total*0.9);
+      for(let i=0;i<total+hold;i++){
+        const t=Math.min(1,(i+1)/draw); const ease=t<1?(1-Math.pow(1-t,1.6)):1; // gentle start, quick finish
+        const th=ease*1.0001;
+        if(i<=draw+1||i===0){ for(let p=0;p<px.length;p++) px[p]=key[p]<=th?fin[p]:bg; ox.putImageData(img,0,0); }
+        if(i%5===0) st.textContent='Making your reveal… '+Math.round(i/(total+hold)*100)+'% (keep this tab open)';
+        await sleep(1000/fps);
+      }
+      rec.stop(); await stopped;
+      const ext=mime.indexOf('mp4')>-1?'mp4':'webm';
+      const name=baseName('reveal')+'.'+ext;
+      const where=await saveBlob(new Blob(chunks,{type:mime.split(';')[0]}),name);
+      st.textContent='Done — '+Math.round((total+hold)/fps)+' seconds.'; addLog(name,where);
+    }catch(e){ st.textContent='Something went wrong making the reveal: '+(e&&e.message?e.message:e); }
+    finally{ revBusy=false; btn.disabled=false; }
+  });
+
+
+  // ── voice notes kept inside the project (saved, synced and archived with it) ──
+  window.__voiceNotes=window.__voiceNotes||[];
+  const NOTE_MAX_BYTES=1500000, NOTE_MAX_COUNT=8;
+  function blobToDataUrl(b){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsDataURL(b); }); }
+  function dataUrlToBlob(u){ const [h,b]=u.split(','), m=/data:([^;]+)/.exec(h)[1], bin=atob(b), a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return new Blob([a],{type:m}); }
+  function renderNotes(){
+    const list=$('recNotes'), wrap=$('recNotesWrap'); if(!list) return;
+    const notes=window.__voiceNotes||[]; list.innerHTML='';
+    wrap.style.display=notes.length?'block':'none';
+    notes.forEach(n=>{
+      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:0.35rem;font-size:0.72rem';
+      const play=document.createElement('button'); play.type='button'; play.className='cup-btn'; play.textContent='▶'; play.style.cssText='min-width:34px;padding:0.2rem 0.4rem';
+      let audio=null; play.addEventListener('click',()=>{ if(audio&&!audio.paused){ audio.pause(); play.textContent='▶'; return; } audio=new Audio(n.data); audio.onended=()=>{ play.textContent='▶'; }; audio.play().catch(()=>{}); play.textContent='❚❚'; });
+      const t=document.createElement('div'); t.style.cssText='flex:1;min-width:0;line-height:1.25'; const tt=document.createElement('div'); tt.style.cssText='font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'; tt.textContent=n.name; const ts=document.createElement('div'); ts.style.color='var(--muted)'; ts.textContent=mmss(n.dur||0)+' · '+new Date(n.ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); t.appendChild(tt); t.appendChild(ts);
+      const dl=document.createElement('button'); dl.type='button'; dl.className='cup-btn'; dl.textContent='⬇'; dl.title='Save a copy to your folder'; dl.style.cssText='min-width:34px;padding:0.2rem 0.4rem';
+      dl.addEventListener('click',async()=>{ await ensureFolderPermission(); const blob=dataUrlToBlob(n.data); const ext=blob.type.indexOf('mp4')>-1?'m4a':'webm'; const where=await saveBlob(blob,baseName('voice note')+'.'+ext); addLog(baseName('voice note')+'.'+ext,where); });
+      const x=document.createElement('button'); x.type='button'; x.className='cup-btn'; x.textContent='✕'; x.title='Remove from this project'; x.style.cssText='min-width:34px;padding:0.2rem 0.4rem';
+      x.addEventListener('click',()=>{ if(!confirm('Remove "'+n.name+'" from this project?')) return; window.__voiceNotes=window.__voiceNotes.filter(v=>v.id!==n.id); renderNotes(); noteChanged(); });
+      row.appendChild(play); row.appendChild(t); row.appendChild(dl); row.appendChild(x); list.appendChild(row);
+    });
+    $('recNotesHint').textContent=notes.length?'These are saved with the project the next time it saves (or autosaves).':'';
+  }
+  window.__renderVoiceNotes=renderNotes;
+  function noteChanged(){ /* the next save or autosave writes the updated list */ }
+  async function keepNote(blob,type,dur){
+    if(blob.size>NOTE_MAX_BYTES){ $('recVoiceStatus').textContent='Saved the file, but it is too long to keep inside the project ('+Math.round(blob.size/1000)+' KB; limit '+Math.round(NOTE_MAX_BYTES/1000)+' KB, roughly 2 minutes). Try a shorter note.'; return; }
+    if((window.__voiceNotes||[]).length>=NOTE_MAX_COUNT){ $('recVoiceStatus').textContent='Saved the file, but this project already holds '+NOTE_MAX_COUNT+' notes. Remove one to add more.'; return; }
+    const d=new Date(), nm='Note — '+d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    window.__voiceNotes.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:nm,ts:d.getTime(),dur:Math.round(dur||0),data:await blobToDataUrl(blob)});
+    renderNotes();
+  }
+  renderNotes();
 
   openBtn.addEventListener('click',()=>panel.classList.toggle('visible'));
   $('recClose').addEventListener('click',()=>panel.classList.remove('visible'));
