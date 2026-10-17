@@ -828,7 +828,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-11q</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-16a</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -1087,6 +1087,7 @@ body.hand-left #dockPanelPhoto{left:54px}
 
 <!-- Record Panel (time-lapse + voice notes) -->
 <div class="cleanup-panel" id="recordPanel" style="width:min(360px,94vw);max-height:calc(100vh - 150px);overflow-y:auto;-webkit-overflow-scrolling:touch">
+<button type="button" onclick="window.__showRecover&&window.__showRecover()" style="margin:6px 8px;padding:5px 10px">🛟 Recover unsaved work</button>
   <div class="cup-top" id="recordDragHandle">
     <span class="cup-count">● Record</span>
     <button class="cup-close" id="recClose" title="Close">✕</button>
@@ -8248,6 +8249,49 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
   if(!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia)){ const s=$('recScrSection'); if(s) s.style.display='none'; }
   openBtn.addEventListener('click',()=>panel.classList.toggle('visible'));
   $('recClose').addEventListener('click',()=>panel.classList.remove('visible'));
+})();
+
+// ── SAFETY NET: rolling backups of unsaved work, restore prompt, close warning ──
+(function(){
+  const DB='studioSafety', KEEP=6, EVERY=20000;
+  function db(){ return new Promise((res,rej)=>{ const r=indexedDB.open(DB,1); r.onupgradeneeded=()=>r.result.createObjectStore('s'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  function tx(mode,fn){ return db().then(d=>new Promise((res,rej)=>{ const t=d.transaction('s',mode); const out=fn(t.objectStore('s')); t.oncomplete=()=>res(out&&out.result!==undefined?out.result:undefined); t.onerror=()=>rej(t.error); })); }
+  function allBackups(){ return db().then(d=>new Promise((res,rej)=>{ const t=d.transaction('s','readonly'); const r=t.objectStore('s').getAll(); const k=t.objectStore('s').getAllKeys(); t.oncomplete=()=>{ const o=r.result.map((v,i)=>Object.assign({key:k.result[i]},v)); o.sort((a,b)=>b.t-a.t); res(o); }; t.onerror=()=>rej(t.error); })); }
+  function hash(){ let h=indices.length*31+(palette?palette.length:0); for(let i=0;i<indices.length;i+=1){ h=(h*33+(indices[i]|0))|0; } return h; }
+  let lastHash=null, slot=null, slotDims='', slotStart=0, bootAt=Date.now();
+  function snap(){
+    try{
+      if(!indices||!indices.length) return;
+      const h=hash(); if(h===lastHash) return; lastHash=h;
+      const dims=gridW+'x'+gridH, now=Date.now();
+      if(!slot||dims!==slotDims||now-slotStart>20*60000){ slot='b'+now; slotDims=dims; slotStart=now; }
+      const data=buildProjectData();
+      const name=(document.getElementById('projectName')?.value||'').trim();
+      tx('readwrite',s=>{ s.put({t:now,dims,name,data},slot); }).then(allBackups).then(list=>{ list.slice(KEEP).forEach(b=>tx('readwrite',s=>{ s.delete(b.key); })); }).catch(()=>{});
+    }catch(e){}
+  }
+  setInterval(snap,EVERY);
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) snap(); });
+  window.addEventListener('pagehide',snap);
+  window.addEventListener('beforeunload',e=>{ if(indices&&indices.length&&!autoSaveProjectId){ snap(); e.preventDefault(); e.returnValue=''; } });
+  function show(){
+    allBackups().then(list=>{
+      let old=document.getElementById('safetyBanner'); if(old) old.remove();
+      if(!list.length){ if(window.__safetyManual) alert('No backups found on this device yet.'); return; }
+      const b=document.createElement('div'); b.id='safetyBanner';
+      b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:90px;z-index:99999;background:#fff;color:#222;border:2px solid #c00;border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.3);font:14px system-ui;max-width:92vw;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+      const sel=document.createElement('select'); sel.style.cssText='font:14px system-ui;max-width:60vw';
+      list.forEach((x,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=new Date(x.t).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})+' — '+(x.name||'untitled')+' ('+x.dims.replace('x','×')+')'; sel.appendChild(o); });
+      const go=document.createElement('button'); go.textContent='Restore'; go.style.cssText='padding:6px 12px;font:600 14px system-ui';
+      const no=document.createElement('button'); no.textContent='✕'; no.style.cssText='padding:6px 10px;font:14px system-ui';
+      const lab=document.createElement('span'); lab.textContent='🛟 Unsaved work found:';
+      go.onclick=()=>{ if(indices&&indices.length&&!confirm('Replace what is on screen with this backup?')) return; try{ restoreProject(list[sel.value].data); }catch(e){ alert('Could not restore: '+e.message); } b.remove(); };
+      no.onclick=()=>b.remove();
+      b.append(lab,sel,go,no); document.body.appendChild(b);
+    }).catch(()=>{});
+  }
+  window.__showRecover=()=>{ window.__safetyManual=true; show(); };
+  setTimeout(()=>{ if(!(indices&&indices.length)) show(); },1500);
 })();
 
 // ── DOCK LAYOUT (landscape iPad) ──────────────────────────────────────────────
