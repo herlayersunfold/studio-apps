@@ -582,6 +582,7 @@ body.hand-left #dockPanelPhoto{left:54px}
       <button class="drill-btn" id="drillSquare" data-size="2.5">■ Square (2.5mm)</button>
     </div>
     <div class="drill-toggle-row" id="drillTypeRhinestoneGroup" style="display:none;flex-wrap:wrap">
+      <button class="drill-btn" id="drillSS8" data-size="2.5">SS8 (2.5mm)</button>
       <button class="drill-btn active" id="drillSS10" data-size="2.8">SS10 (2.8mm)</button>
       <button class="drill-btn" id="drillSS12" data-size="3">SS12 (3mm)</button>
       <button class="drill-btn" id="drillSS16" data-size="4">SS16 (4mm)</button>
@@ -674,6 +675,7 @@ body.hand-left #dockPanelPhoto{left:54px}
       <button class="drill-btn" id="resizeDrillSquare" data-size="2.5">■ Square (2.5mm)</button>
     </div>
     <div class="drill-toggle-row" id="resizeDrillTypeRhinestoneGroup" style="margin-top:0.5rem;flex-wrap:wrap;display:none">
+      <button class="drill-btn" id="resizeDrillSS8" data-size="2.5">SS8 (2.5mm)</button>
       <button class="drill-btn active" id="resizeDrillSS10" data-size="2.8">SS10 (2.8mm)</button>
       <button class="drill-btn" id="resizeDrillSS12" data-size="3">SS12 (3mm)</button>
       <button class="drill-btn" id="resizeDrillSS16" data-size="4">SS16 (4mm)</button>
@@ -828,7 +830,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-16b</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-17a</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -1235,7 +1237,7 @@ function fileNamePrefix(){ return appMode==='rhinestone' ? 'rhinestone-art-' : '
 // Data-only lookup for the 4 rhinestone sizes (mm <-> SS label). The actual
 // on-screen buttons for these are defined separately further down, in the
 // Rhinestone Size button group.
-const SS_SIZES=[{mm:2.8,ss:'SS10'},{mm:3,ss:'SS12'},{mm:4,ss:'SS16'},{mm:5,ss:'SS20'}];
+const SS_SIZES=[{mm:2.5,ss:'SS8'},{mm:2.8,ss:'SS10'},{mm:3,ss:'SS12'},{mm:4,ss:'SS16'},{mm:5,ss:'SS20'}];
 // Unifies "Round"/"Square" (Diamond Art) vs "SS10"/"SS12"/"SS16"/"SS20"
 // (Rhinestone) size labeling behind one call, so every stats-bar/PDF/
 // shopping-list spot that needs a size label works correctly in both modes.

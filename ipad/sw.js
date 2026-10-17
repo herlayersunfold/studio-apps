@@ -1,5 +1,5 @@
 // Offline support. Bump the build number (it changes automatically with each new version of the app).
-const CACHE='ipad-2026-10-16b';
+const CACHE='ipad-2026-10-17a';
 const FILES=['./','index.html','manifest.webmanifest','vendor/jspdf.umd.min.js','icon-192.png','icon-512.png','apple-touch-icon.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k.startsWith('ipad-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
