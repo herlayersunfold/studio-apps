@@ -828,7 +828,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-16a</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-16b</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -1212,7 +1212,7 @@ body.hand-left #dockPanelPhoto{left:54px}
 <script>
 // ── DMC COLOR DATABASE ────────────────────────────────────────────────────────
 const DMC_DIAMOND = {'150':{n:'Dusty Rose Ult Vy Dk',h:'#AB1A5F'},'151':{n:'Dusty Rose Vy Lt',h:'#F4C0D1'},'152':{n:'Tawny Dark',h:'#B5806A'},'153':{n:'Violet Vy Lt',h:'#E8CCE0'},'154':{n:'Grape Vy Dk',h:'#3D1F3D'},'155':{n:'Soft Violet',h:'#7B6EA0'},'156':{n:'Blue Violet Med Lt',h:'#A0A8D0'},'157':{n:'Blue Light',h:'#A0B4D0'},'158':{n:'Cornflower Blue Md Vy Dk',h:'#2A3A6A'},'159':{n:'Blue Gray Light',h:'#C0C8D8'},'160':{n:'Blue Gray Med',h:'#8090A8'},'161':{n:'Petrol Blue Dark',h:'#304858'},'162':{n:'Light Glacier',h:'#D8ECF0'},'163':{n:'Dark Beryl',h:'#5A8C6A'},'164':{n:'Pastel Green',h:'#A8CCA8'},'165':{n:'Pale Yellow',h:'#F0F0A0'},'166':{n:'Moss Green Md Lt',h:'#8CAA38'},'167':{n:'Yellow Beige Vy Dk',h:'#906030'},'168':{n:'Silver Gray',h:'#C0C0C0'},'169':{n:'Pewter Light',h:'#A8A8A8'},'208':{n:'Lavender Vy Dk',h:'#7A5090'},'209':{n:'Mid Lilac',h:'#9070B0'},'210':{n:'Lilac',h:'#B090C8'},'211':{n:'Lavender Light',h:'#D0B8E0'},'221':{n:'Sangria',h:'#8C1A2A'},'223':{n:'Soft Pink Light',h:'#D89090'},'224':{n:'Soft Pink',h:'#E0A8A0'},'225':{n:'Soft Pink Vy Lt',h:'#F0D0C8'},'300':{n:'Dark Brown',h:'#6B2A10'},'301':{n:'Dark Ochre',h:'#A06030'},'304':{n:'Red Medium',h:'#B81830'},'307':{n:'Lemon',h:'#F8EC60'},'309':{n:'Rose Dark',h:'#C04060'},'310':{n:'Black',h:'#000000'},'311':{n:'Wedgewood Ult Vy Dk',h:'#1A3858'},'312':{n:'Mid Oriental Blue',h:'#2A5888'},'315':{n:'Antique Mauve Md Dk',h:'#7A4858'},'316':{n:'Antique Mauve Med',h:'#A06878'},'317':{n:'Pewter Gray',h:'#787878'},'318':{n:'Steel Gray Lt',h:'#A8AAB0'},'319':{n:'Pistachio Green Vy Dk',h:'#2A5030'},'320':{n:'Pistachio Green Med',h:'#608060'},'321':{n:'Crimson',h:'#D81820'},'322':{n:'Baby Blue Dark',h:'#5888B0'},'326':{n:'Rose Very Dark',h:'#C02050'},'327':{n:'Violet Dark',h:'#5A2070'},'333':{n:'Blue Violet Very Dark',h:'#3A2870'},'334':{n:'Baby Blue Medium',h:'#78A8D0'},'335':{n:'Rose',h:'#D84070'},'336':{n:'Navy Blue',h:'#183068'},'340':{n:'Blue Violet Medium',h:'#8878B8'},'341':{n:'Blue Violet Light',h:'#A8A0D0'},'347':{n:'Salmon Vy Dark',h:'#C02020'},'349':{n:'Coral Dark',h:'#C02830'},'350':{n:'Coral Medium',h:'#D04040'},'351':{n:'Coral',h:'#E06050'},'352':{n:'Coral Light',h:'#F08878'},'353':{n:'Light Blush',h:'#F8C0B0'},'355':{n:'Terra Cotta Med Dark',h:'#904030'},'356':{n:'Terra Cotta Medium',h:'#B06050'},'367':{n:'Pistachio Green Dk',h:'#507050'},'368':{n:'Pistachio Green Lt',h:'#90B890'},'369':{n:'Pistachio Green Vy Lt',h:'#C8E0C8'},'370':{n:'Mustard Medium',h:'#A08030'},'371':{n:'Mustard',h:'#B09038'},'372':{n:'Mustard Light',h:'#C0A848'},'400':{n:'Ochre',h:'#A06820'},'402':{n:'Light Ochre',h:'#E09060'},'407':{n:'Desert Sand Med',h:'#C09070'},'413':{n:'Pewter Gray Dark',h:'#585858'},'414':{n:'Steel Gray Dark',h:'#888888'},'415':{n:'Pearl Gray',h:'#D0D0D0'},'420':{n:'Mocha',h:'#906840'},'422':{n:'Sand',h:'#C0A870'},'433':{n:'Brown',h:'#7A4020'},'434':{n:'Brown Light',h:'#905030'},'435':{n:'Dark Latte',h:'#A86030'},'436':{n:'Tan',h:'#C08050'},'437':{n:'Medium Latte',h:'#D0A060'},'444':{n:'Lemon Dark',h:'#F0D000'},'445':{n:'Lemon Light',h:'#F8F090'},'451':{n:'Shell Gray Dark',h:'#907870'},'452':{n:'Shell Gray Med',h:'#B09890'},'453':{n:'Shell Gray Light',h:'#D0C0B8'},'469':{n:'Avocado Green',h:'#708040'},'470':{n:'Avocado Green Lt',h:'#90A050'},'471':{n:'Avocado Green Vy Lt',h:'#B0C070'},'472':{n:'Avocado Green Ultra Vy Lt',h:'#D0E090'},'498':{n:'Burgundy',h:'#780020'},'500':{n:'Dark Pine Green',h:'#204830'},'501':{n:'Blue Green Dark',h:'#306050'},'502':{n:'Blue Green',h:'#508070'},'503':{n:'Blue Green Med',h:'#70A090'},'505':{n:'Jade Green',h:'#388060'},'517':{n:'Wedgewood Dark',h:'#2868A0'},'518':{n:'Wedgewood Light',h:'#4890C0'},'519':{n:'Heavenly Blue',h:'#78B0D0'},'520':{n:'Fern Green Dark',h:'#486040'},'522':{n:'Fern Green',h:'#708060'},'523':{n:'Fern Green Lt',h:'#90A070'},'524':{n:'Fern Green Vy Lt',h:'#B0C090'},'535':{n:'Ash Gray Vy Lt',h:'#909090'},'543':{n:'Beige Brown Ult Vy Lt',h:'#E8D8C8'},'550':{n:'Violet Very Dark',h:'#400870'},'552':{n:'Violet Medium',h:'#703090'},'553':{n:'Violet',h:'#9050B0'},'554':{n:'Violet Light',h:'#C090D0'},'561':{n:'Juniper',h:'#2A6050'},'562':{n:'Jade Medium',h:'#509070'},'563':{n:'Jade Light',h:'#78B090'},'564':{n:'Jade Very Light',h:'#A8D0B8'},'580':{n:'Moss Green Dk',h:'#606820'},'581':{n:'Moss Green',h:'#788030'},'597':{n:'Turquoise',h:'#3898A0'},'598':{n:'Turquoise Light',h:'#70C0C8'},'600':{n:'Cranberry Very Dark',h:'#C01860'},'601':{n:'Cranberry Dark',h:'#D02070'},'602':{n:'Cranberry Medium',h:'#E03080'},'603':{n:'Cranberry',h:'#F04090'},'604':{n:'Cranberry Light',h:'#F878B0'},'605':{n:'Cranberry Very Light',h:'#FDB0D0'},'606':{n:'Sunset',h:'#F03010'},'608':{n:'Burnt Bright Orange',h:'#E84010'},'610':{n:'Drab Brown Dk',h:'#806040'},'611':{n:'Drab Brown',h:'#987850'},'612':{n:'Drab Brown Lt',h:'#B89870'},'613':{n:'Drab Brown Vy Lt',h:'#D8C090'},'632':{n:'Desert Sand Ult Vy Dk',h:'#906050'},'640':{n:'Beige Gray Vy Dk',h:'#706860'},'642':{n:'Beige Gray Dark',h:'#988878'},'644':{n:'Beige Gray Med',h:'#C0B0A0'},'645':{n:'Beige Gray Vy Dk',h:'#686058'},'646':{n:'Beaver Gray Dark',h:'#807870'},'647':{n:'Beaver Gray Medium',h:'#A09888'},'648':{n:'Beaver Gray Light',h:'#C0B8A8'},'666':{n:'Red Bright',h:'#E80020'},'676':{n:'Old Gold Lt',h:'#D0B870'},'677':{n:'Old Gold Very Light',h:'#E8D8A0'},'680':{n:'Old Gold Dark',h:'#A08030'},'699':{n:'Dark Kelly Green',h:'#006020'},'700':{n:'Med Kelly Green',h:'#108030'},'701':{n:'Kelly Green Light',h:'#28A040'},'702':{n:'Kelly Green',h:'#38B850'},'703':{n:'Chartreuse',h:'#70C840'},'704':{n:'Chartreuse Bright',h:'#90E050'},'712':{n:'Cream',h:'#F8F0E0'},'718':{n:'Plum',h:'#900060'},'720':{n:'Orange Spice Dark',h:'#C85010'},'721':{n:'Orange Spice Med',h:'#E07020'},'722':{n:'Orange Spice Light',h:'#F09840'},'725':{n:'Topaz',h:'#F0B030'},'726':{n:'Topaz Light',h:'#F8C840'},'727':{n:'Topaz Very Light',h:'#FDE880'},'728':{n:'Topaz Med Dark',h:'#D09020'},'729':{n:'Old Gold Medium',h:'#C09830'},'730':{n:'Olive Green Very Dark',h:'#587010'},'732':{n:'Olive Green',h:'#708020'},'733':{n:'Olive Green Med',h:'#90A030'},'734':{n:'Olive Green Light',h:'#B0C048'},'738':{n:'Tan Very Light',h:'#E8C898'},'739':{n:'Tan Ultra Very Light',h:'#F0DEB8'},'740':{n:'Tangerine',h:'#F07010'},'741':{n:'Tangerine Medium',h:'#F09020'},'742':{n:'Tangerine Light',h:'#F8B030'},'743':{n:'Yellow Med',h:'#F8D050'},'744':{n:'Yellow Pale',h:'#F8E080'},'745':{n:'Yellow Pale Light',h:'#F8F0A0'},'746':{n:'Off White',h:'#F8F4E8'},'747':{n:'Peacock Blue Vy Lt',h:'#D0F0F0'},'754':{n:'Peach Light',h:'#F8C8B0'},'758':{n:'Terra Cotta Very Light',h:'#E8B098'},'760':{n:'Salmon',h:'#F09080'},'761':{n:'Salmon Light',h:'#F8B0A0'},'762':{n:'Pearl Gray Very Light',h:'#E8E8E8'},'772':{n:'Yellow Green Vy Lt',h:'#D8E8B0'},'775':{n:'Baby Blue',h:'#D0E8F8'},'777':{n:'Raspberry Very Dark',h:'#8C1038'},'778':{n:'Antique Mauve Vy Lt',h:'#D8B0B8'},'779':{n:'Dark Java',h:'#604840'},'780':{n:'Topaz Ultra Vy Dk',h:'#906010'},'782':{n:'Topaz Dark',h:'#B07820'},'783':{n:'Topaz Medium',h:'#C89030'},'791':{n:'Cornflower Blue Very Dark',h:'#203870'},'792':{n:'Cornflower Blue Dark',h:'#304888'},'793':{n:'Cornflower Blue Med',h:'#5070A8'},'794':{n:'Cornflower Blue Light',h:'#8098C8'},'796':{n:'Royal Blue Dark',h:'#083888'},'797':{n:'Royal Blue',h:'#1048A0'},'798':{n:'Delft Blue Dark',h:'#2858A8'},'799':{n:'Delft Blue Medium',h:'#5080C0'},'800':{n:'Delft Blue Pale',h:'#A0C0E0'},'801':{n:'Coffee Brown Dark',h:'#603020'},'803':{n:'Baby Blue Ult Vy Dk',h:'#384870'},'807':{n:'Peacock Blue',h:'#40A0B0'},'809':{n:'Delft Blue',h:'#6090C0'},'813':{n:'Blue Light',h:'#90B8D8'},'814':{n:'Garnet Dark',h:'#780020'},'815':{n:'Garnet Medium',h:'#880020'},'816':{n:'Garnet',h:'#980820'},'817':{n:'Red',h:'#C81010'},'818':{n:'Baby Pink',h:'#FDD8D8'},'819':{n:'Baby Pink Light',h:'#FDE8E8'},'820':{n:'Royal Blue Vy Dark',h:'#082870'},'822':{n:'Beige Gray Light',h:'#E0D8C8'},'823':{n:'Midnight Blue',h:'#102058'},'824':{n:'Blue Very Dark',h:'#184880'},'825':{n:'Denim',h:'#285890'},'826':{n:'Blue Medium',h:'#4878A8'},'827':{n:'Glacier Blue',h:'#A8C8E8'},'828':{n:'Blue Ultra Very Light',h:'#C8E0F0'},'829':{n:'Golden Olive Vy Dk',h:'#706020'},'830':{n:'Golden Olive Dk',h:'#887830'},'831':{n:'Golden Olive Md',h:'#A09040'},'832':{n:'Golden Olive',h:'#B8A850'},'833':{n:'Golden Olive Lt',h:'#D0C060'},'834':{n:'Golden Olive Vy Lt',h:'#E8D878'},'838':{n:'Beige Brown Vy Dk',h:'#604838'},'839':{n:'Beige Brown Dark',h:'#785848'},'840':{n:'Beige Brown Med',h:'#907060'},'841':{n:'Beige Brown Lt',h:'#B09080'},'842':{n:'Beige Brown Vy Lt',h:'#D0B8A0'},'844':{n:'Beaver Gray Ultra Dark',h:'#484848'},'869':{n:'Hazelnut Brown Vy Dk',h:'#785030'},'890':{n:'Pistachio Green Ult Vy Dk',h:'#184028'},'891':{n:'Carnation Dark',h:'#E83060'},'892':{n:'Carnation Medium',h:'#F05070'},'893':{n:'Carnation Light',h:'#F87888'},'894':{n:'Carnation Very Light',h:'#FDA0A8'},'895':{n:'Hunter Green Vy Dk',h:'#184828'},'898':{n:'Coffee Brown Vy Dk',h:'#401808'},'899':{n:'Rose Medium',h:'#E06880'},'900':{n:'Burnt Orange Dark',h:'#B03010'},'902':{n:'Dark Garnet',h:'#600018'},'904':{n:'Parrot Green Very Dark',h:'#308040'},'905':{n:'Parrot Green Dk',h:'#409850'},'906':{n:'Parrot Green Md',h:'#58B060'},'907':{n:'Parrot Green Lt',h:'#88D070'},'909':{n:'Dark Emerald',h:'#006830'},'910':{n:'Emerald Green',h:'#008040'},'911':{n:'Emerald Green Med',h:'#00A050'},'912':{n:'Emerald Green Lt',h:'#20C060'},'913':{n:'Nile Green Med',h:'#78C878'},'915':{n:'Plum Dark',h:'#780050'},'917':{n:'Plum Medium',h:'#A00060'},'918':{n:'Red Copper Dark',h:'#802818'},'919':{n:'Red Copper',h:'#983020'},'920':{n:'Copper Medium',h:'#A84028'},'921':{n:'Copper',h:'#C05030'},'922':{n:'Copper Light',h:'#D07040'},'924':{n:'Gray Green Vy Dark',h:'#405848'},'926':{n:'Gray Green Med',h:'#788880'},'927':{n:'Gray Green Light',h:'#A0B0A8'},'928':{n:'Gray Green Vy Lt',h:'#C8D0C8'},'930':{n:'Antique Blue Dark',h:'#385878'},'931':{n:'Antique Blue Medium',h:'#507898'},'932':{n:'Antique Blue Light',h:'#80A0B8'},'934':{n:'Dark Forest',h:'#304830'},'935':{n:'Avocado Green Dark',h:'#485828'},'936':{n:'Avocado Green Very Dark',h:'#384820'},'937':{n:'Avocado Green Md',h:'#607838'},'938':{n:'Coffee Brown Ult Dk',h:'#301008'},'939':{n:'Navy Blue Very Dark',h:'#081848'},'943':{n:'Green Bright Medium',h:'#00B080'},'945':{n:'Tawny Med',h:'#E0A880'},'946':{n:'Burnt Orange Med',h:'#D04810'},'947':{n:'Dark Orange',h:'#E05810'},'948':{n:'Peach Very Light',h:'#FDE8D8'},'950':{n:'Desert Sand Light',h:'#E8C8A8'},'951':{n:'Tawny Light',h:'#F0D0A8'},'954':{n:'Nile Green',h:'#98D098'},'955':{n:'Nile Green Light',h:'#B8E8B8'},'956':{n:'Geranium',h:'#F05878'},'957':{n:'Geranium Pale',h:'#F898A8'},'958':{n:'Sea Green Dark',h:'#20A888'},'959':{n:'Sea Green Medium',h:'#40C0A0'},'961':{n:'Dusty Rose Dark',h:'#C86080'},'962':{n:'Dusty Rose Medium',h:'#E08098'},'963':{n:'Dusty Rose Ult Vy Lt',h:'#FDD8E8'},'964':{n:'Sea Green Light',h:'#88D8C8'},'966':{n:'Jade Ultra Vy Lt',h:'#C8E8D0'},'967':{n:'Apricot Very Light',h:'#FDD0B0'},'970':{n:'Pumpkin Light',h:'#F07820'},'971':{n:'Pumpkin',h:'#E86010'},'972':{n:'Canary Deep',h:'#F8B010'},'973':{n:'Canary Bright',h:'#F8D000'},'975':{n:'Golden Brown Dark',h:'#906828'},'976':{n:'Golden Brown Med',h:'#B08038'},'977':{n:'Golden Brown Light',h:'#D0A050'},'986':{n:'Forest Green Vy Dk',h:'#284828'},'987':{n:'Forest Green Dk',h:'#385838'},'988':{n:'Forest Green Med',h:'#508050'},'989':{n:'Forest Green',h:'#68A068'},'991':{n:'Aquamarine Dark',h:'#308070'},'992':{n:'Aquamarine Lt',h:'#60B0A0'},'993':{n:'Aquamarine Vy Lt',h:'#90D0C0'},'995':{n:'Electric Blue Dark',h:'#0880C0'},'996':{n:'Electric Blue Medium',h:'#28A0E0'},'3011':{n:'Khaki Green Dk',h:'#706840'},'3012':{n:'Khaki Green Md',h:'#909060'},'3013':{n:'Khaki Green Lt',h:'#B0B080'},'3021':{n:'Brown Gray Vy Dk',h:'#484038'},'3022':{n:'Brown Gray Med',h:'#808070'},'3023':{n:'Brown Gray Light',h:'#A8A090'},'3024':{n:'Brown Gray Vy Lt',h:'#D0C8B8'},'3031':{n:'Mocha Brown Vy Dk',h:'#483020'},'3032':{n:'Mocha Brown Med',h:'#B09070'},'3033':{n:'Mocha Brown Vy Lt',h:'#E0C8A8'},'3041':{n:'Mushroom',h:'#907888'},'3042':{n:'Pale Mushroom',h:'#B8A0A8'},'3045':{n:'Yellow Beige Dk',h:'#C0A058'},'3046':{n:'Yellow Beige Med',h:'#D8B870'},'3047':{n:'Yellow Beige Lt',h:'#E8D098'},'3051':{n:'Green Gray Dark',h:'#586048'},'3052':{n:'Green Gray Med',h:'#789068'},'3053':{n:'Green Gray',h:'#98A888'},'3064':{n:'Desert Sand',h:'#C89070'},'3072':{n:'Beaver Gray Very Light',h:'#E0E0D8'},'3078':{n:'Primrose Yellow',h:'#F8F8C0'},'3325':{n:'Baby Blue Light',h:'#B8D8F0'},'3326':{n:'Rose Light',h:'#F8A0B0'},'3328':{n:'Salmon Dark',h:'#D86060'},'3340':{n:'Deep Coral',h:'#E05040'},'3341':{n:'Coral',h:'#F07060'},'3345':{n:'Hunter Green Dk',h:'#207030'},'3346':{n:'Hunter Green',h:'#308840'},'3347':{n:'Yellow Green Med',h:'#78A848'},'3348':{n:'Yellow Green Lt',h:'#B0C878'},'3350':{n:'Dusty Rose Ultra Dark',h:'#B03060'},'3354':{n:'Dusty Rose Light',h:'#E898A8'},'3362':{n:'Pine Green Dk',h:'#486040'},'3363':{n:'Pine Green Md',h:'#608050'},'3364':{n:'Pine Green',h:'#78A060'},'3371':{n:'Black Brown',h:'#180800'},'3607':{n:'Puce',h:'#C03070'},'3608':{n:'Light Puce',h:'#E070A0'},'3609':{n:'Plum Ultra Light',h:'#F0B0D0'},'3685':{n:'Mauve Very Dark',h:'#801840'},'3687':{n:'Mauve',h:'#B04868'},'3688':{n:'Mauve Medium',h:'#D07090'},'3689':{n:'Mauve Light',h:'#F0A0B8'},'3705':{n:'Melon Dark',h:'#F05060'},'3706':{n:'Melon Medium',h:'#F88090'},'3708':{n:'Melon Light',h:'#FDB0B8'},'3712':{n:'Salmon Medium',h:'#E07868'},'3713':{n:'Salmon Very Light',h:'#F8C8C0'},'3716':{n:'Dusty Rose Med Vy Lt',h:'#F8B0C0'},'3721':{n:'Shell Pink Dark',h:'#A04050'},'3722':{n:'Shell Pink Med',h:'#C06070'},'3726':{n:'Rose Quartz',h:'#B07080'},'3727':{n:'Rose Quartz Light',h:'#D0A0A8'},'3731':{n:'Dusty Rose Very Dark',h:'#C05070'},'3733':{n:'Dusty Rose',h:'#E07890'},'3740':{n:'Antique Violet Dark',h:'#604060'},'3743':{n:'Antique Violet Vy Lt',h:'#C8B8C8'},'3746':{n:'Blue Violet Dark',h:'#6858A0'},'3747':{n:'Blue Violet Vy Lt',h:'#C0C0E8'},'3750':{n:'Antique Blue Very Dk',h:'#203050'},'3752':{n:'Antique Blue Very Light',h:'#B0C0D8'},'3753':{n:'Antique Blue Ult Vy Lt',h:'#D0DCE8'},'3755':{n:'Baby Blue',h:'#88B8D8'},'3756':{n:'Ice Blue',h:'#E8F4F8'},'3760':{n:'Wedgewood Med',h:'#3878A8'},'3761':{n:'Sky Blue Light',h:'#98C8E0'},'3765':{n:'Peacock Blue Vy Dk',h:'#187888'},'3766':{n:'Peacock Blue Light',h:'#68B8C8'},'3768':{n:'Gray Green Dark',h:'#607070'},'3770':{n:'Tawny Vy Light',h:'#F8E0C8'},'3771':{n:'Terra Cotta Ult Vy Lt',h:'#F0C8B0'},'3772':{n:'Desert Sand Vy Dark',h:'#905040'},'3774':{n:'Desert Sand Vy Lt',h:'#F0D8C0'},'3776':{n:'Ochre Med',h:'#C07828'},'3777':{n:'Terra Cotta Dark',h:'#803028'},'3778':{n:'Terra Cotta Light',h:'#D09080'},'3779':{n:'Rosewood Ult Vy Lt',h:'#F8D0C8'},'3781':{n:'Mocha Brown Dk',h:'#706050'},'3782':{n:'Mocha Brown Lt',h:'#D0C0A8'},'3787':{n:'Brown Gray Dark',h:'#605850'},'3790':{n:'Beige Gray Ult Dk',h:'#584840'},'3799':{n:'Pewter Gray Vy Dk',h:'#484848'},'3801':{n:'Melon Very Dark',h:'#D03048'},'3802':{n:'Antique Mauve Vy Dk',h:'#603048'},'3803':{n:'Mauve Dark',h:'#983058'},'3804':{n:'Dark Cyclamen',h:'#E01880'},'3805':{n:'Mid Cyclamen',h:'#E83898'},'3806':{n:'Light Cyclamen',h:'#F870B8'},'3807':{n:'Cornflower Blue',h:'#6070A8'},'3808':{n:'Turquoise Ult Vy Dk',h:'#186880'},'3809':{n:'Turquoise Vy Dark',h:'#208898'},'3810':{n:'Dark Turquoise',h:'#38A8B8'},'3811':{n:'Turquoise Very Light',h:'#B8E0E8'},'3812':{n:'Sea Green Vy Dk',h:'#188070'},'3813':{n:'Blue Green Lt',h:'#90C8B8'},'3814':{n:'Aquamarine',h:'#50A090'},'3815':{n:'Celadon Green Dk',h:'#408060'},'3816':{n:'Celadon Green',h:'#60A080'},'3817':{n:'Celadon Green Lt',h:'#90C0A0'},'3818':{n:'Emerald Green Ult V Dk',h:'#005828'},'3819':{n:'Bright Lime',h:'#D0E050'},'3820':{n:'Straw Dark',h:'#E0B040'},'3821':{n:'Straw',h:'#F0C848'},'3822':{n:'Straw Light',h:'#F8D870'},'3823':{n:'Yellow Ultra Pale',h:'#FFFFF0'},'3824':{n:'Apricot Light',h:'#FDC8A0'},'3825':{n:'Pumpkin Pale',h:'#FDB870'},'3826':{n:'Golden Brown',h:'#C09038'},'3827':{n:'Golden Brown Pale',h:'#F0C870'},'3828':{n:'Hazelnut Brown',h:'#B08848'},'3829':{n:'Old Gold Vy Dk',h:'#907020'},'3830':{n:'Terra Cotta',h:'#B04838'},'3831':{n:'Raspberry Dark',h:'#A02040'},'3832':{n:'Raspberry Medium',h:'#C03050'},'3833':{n:'Raspberry Light',h:'#E06070'},'3834':{n:'Grape Dark',h:'#602060'},'3835':{n:'Grape Medium',h:'#803080'},'3836':{n:'Grape Light',h:'#B060A8'},'3837':{n:'Lavender Ultra Dark',h:'#502870'},'3838':{n:'Lavender Blue Dark',h:'#384880'},'3839':{n:'Lavender Blue Med',h:'#5868A0'},'3840':{n:'Lavender Blue Light',h:'#8898C8'},'3841':{n:'Baby Blue Pale',h:'#C8E0F0'},'3842':{n:'Wedgewood Vry Dk',h:'#205878'},'3843':{n:'Electric Blue',h:'#1090D8'},'3844':{n:'Turquoise Bright Dark',h:'#00B0C8'},'3845':{n:'Turquoise Bright Med',h:'#20C8E0'},'3846':{n:'Turquoise Bright Light',h:'#60E0F0'},'3847':{n:'Teal Green Dark',h:'#207868'},'3848':{n:'Teal Green Med',h:'#389888'},'3849':{n:'Teal Green Light',h:'#60B8A8'},'3850':{n:'Green Bright Dark',h:'#30A878'},'3851':{n:'Green Bright Light',h:'#60C898'},'3852':{n:'Straw Very Dark',h:'#C09820'},'3853':{n:'Autumn Gold Dark',h:'#E07818'},'3854':{n:'Autumn Gold Med',h:'#F09030'},'3855':{n:'Autumn Gold Lt',h:'#F8B048'},'3856':{n:'Mahogany Ult Vy Lt',h:'#FDD0B0'},'3857':{n:'Rosewood Dark',h:'#601820'},'3858':{n:'Rosewood Med',h:'#883038'},'3859':{n:'Rosewood Light',h:'#B06068'},'3860':{n:'Java',h:'#806050'},'3861':{n:'Light Java',h:'#A08070'},'3862':{n:'Mocha Beige Dark',h:'#807060'},'3863':{n:'Mocha Beige Med',h:'#A09080'},'3864':{n:'Mocha Beige Light',h:'#C0B0A0'},'3865':{n:'Winter White',h:'#F8F8F0'},'3866':{n:'Mocha Brn Ult Vy Lt',h:'#F0E8D8'},'3868':{n:'Ecru',h:'#F0E8D0'},'5200':{n:'Snow White',h:'#FFFFFF'}};
-const DMC_RHINESTONE = {'1':{n:'Aquamarine Silverback',h:'#4FB8C4'},'2':{n:'Black Diamond Silverback',h:'#3A3A3A'},'3':{n:'Black Diamond Transparent',h:'#4B4B4B'},'4':{n:'Blue Zircon',h:'#3FA9C9'},'5':{n:'Capri Blue AB Jelly',h:'#1E8FC4'},'6':{n:'Capri Blue Silverback',h:'#1B7CAE'},'7':{n:'Capri Blue AB Transparent',h:'#2A9BD1'},'8':{n:'Chalk White Silverback',h:'#EDEBE4'},'9':{n:'Champagne Silverback',h:'#E3CBA0'},'10':{n:'Citrine Silverback',h:'#E0A83C'},'11':{n:'Clear Aquamarine Luminous',h:'#BFEAEA'},'12':{n:'Coffee Silverback',h:'#6B4A34'},'13':{n:'Crystal Silverback',h:'#E6F1F5'},'14':{n:'Dark Amethyst AB Transparent',h:'#6B3388'},'15':{n:'Dark Amethyst Silverback',h:'#572A6E'},'16':{n:'Dark Pink AB Jelly',h:'#E0507F'},'17':{n:'Dark Siam Silverback',h:'#7A1418'},'18':{n:'Emerald Silverback',h:'#0E8F57'},'19':{n:'Emerald Transparent',h:'#1FA968'},'20':{n:'Fuchsia Silverback',h:'#C21E70'},'21':{n:'Glow Aquamarine',h:'#C7ECEC'},'22':{n:'Glow Citrine',h:'#F1DD9E'},'23':{n:'Glow Hot Pink Rose',h:'#F6B7CC'},'24':{n:'Glow Light Amethyst',h:'#DEC6EC'},'25':{n:'Glow Light Peridot',h:'#DAE8A8'},'26':{n:'Glow Light Pink',h:'#FADBE4'},'27':{n:'Glow Orange',h:'#FAC896'},'28':{n:'Glow Sapphire',h:'#B7D2EC'},'29':{n:'Glow Seeryusly Orange',h:'#FFA354'},'30':{n:'Glow Transparent',h:'#EAF5F5'},'31':{n:'Grape Silverback',h:'#6A2AA0'},'32':{n:'Green Zircon Silverback',h:'#7FB236'},'33':{n:'Hot Pink',h:'#FF5FA8'},'34':{n:'Lake Blue',h:'#3D7CB3'},'35':{n:'Light Amethyst AB Jelly',h:'#C79FE0'},'36':{n:'Light Amethyst Silverback',h:'#C6A0DC'},'37':{n:'Light Peridot AB Jelly',h:'#C3D67A'},'38':{n:'Light Peridot Silverback',h:'#B8CE6C'},'39':{n:'Light Peridot Transparent Glow In The Dark',h:'#D6E7A6'},'40':{n:'Light Pink AB Jelly',h:'#F6C4D2'},'41':{n:'Light Pink Silverback',h:'#F3BFCC'},'42':{n:'Light Pink Transparent Glow In The Dark',h:'#FADFE6'},'43':{n:'Light Rose AB Jelly',h:'#F2A6B8'},'44':{n:'Light Rose Silverback',h:'#EE9CAF'},'45':{n:'Light Sapphire Silverback',h:'#7CA4D6'},'46':{n:'Light Topaz Silverback',h:'#F0C579'},'47':{n:'Midnight Purple AB',h:'#2C1848'},'48':{n:'Mine Gold',h:'#C6A046'},'49':{n:'Montana Silverback',h:'#1A3A5C'},'50':{n:'Neon Blue',h:'#1F8EF1'},'51':{n:'Neon Dark Amethyst',h:'#8B1FA8'},'52':{n:'Neon Orange SB',h:'#FF6A00'},'53':{n:'Neon Pink SB',h:'#FF2E96'},'54':{n:'Olive Silverback',h:'#6C7A2A'},'55':{n:'Opaque Burgundy',h:'#6E0F1E'},'56':{n:'Opaque Cobalt',h:'#1E3F8F'},'57':{n:'Opaque Coffee',h:'#5A3A28'},'58':{n:'Opaque Dark Amethyst',h:'#5C2680'},'59':{n:'Opaque Dark Peacock',h:'#0B5D5D'},'60':{n:'Opaque Dark Spruce Green',h:'#1F4032'},'61':{n:'Opaque Honeydew',h:'#E6F2D6'},'62':{n:'Opaque Hot Pink',h:'#F03984'},'63':{n:'Opaque Jet Black',h:'#0A0A0A'},'64':{n:'Opaque Light Amethyst',h:'#C9A8DA'},'65':{n:'Opaque Light Pink',h:'#F4C7D4'},'66':{n:'Opaque Light Sapphire',h:'#7FA6D2'},'67':{n:'Opaque Macaroon Hyacinth',h:'#E38B6E'},'68':{n:'Opaque Milk Tea Powder',h:'#D9BFA3'},'69':{n:'Opaque Mint Blue',h:'#A2E3DC'},'70':{n:'Opaque Mint Green',h:'#93E0AC'},'71':{n:'Opaque Navy Blue',h:'#10254A'},'72':{n:'Opaque Olive',h:'#757F35'},'73':{n:'Opaque Orange',h:'#F0781F'},'74':{n:'Opaque Pastel Citrine',h:'#EFD588'},'75':{n:'Opaque Rose',h:'#C2456A'},'76':{n:'Opaque Taro Purple',h:'#8E7CC3'},'77':{n:'Opaque Tiffany Blue',h:'#7ED4CB'},'78':{n:'Opaque White',h:'#F7F6F2'},'79':{n:'Opaque White 3-5mm',h:'#F5F4EF'},'80':{n:'Orange AB (SB)',h:'#F08A2E'},'81':{n:'Orange Silverback',h:'#E9711A'},'82':{n:'Orange Transparent Glow In The Dark',h:'#FAC08A'},'83':{n:'Rose Gold AB Jelly',h:'#D9A6A0'},'84':{n:'Sapphire Silverback',h:'#1B4F91'},'85':{n:'Siam AB Jelly',h:'#A5121A'},'86':{n:'Siam Silverback',h:'#9E0B0F'},'87':{n:'Topaz N',h:'#D6841F'},'88':{n:'Topaz Silverback',h:'#D2791C'},'89':{n:'Transparent',h:'#E9F3F5'},'90':{n:'Transparent Citrine AB Jelly',h:'#E8C267'},'91':{n:'Transparent Dark Amethyst',h:'#6E3A8A'},'92':{n:'Transparent Glow In The Dark',h:'#EAF5F5'},'93':{n:'Transparent Peach AB',h:'#F4B98F'},'94':{n:'Transparent Peridot',h:'#A9C934'},'95':{n:'White AB Jelly',h:'#F4F2ED'}};
+const DMC_RHINESTONE = {'1':{n:'Aquamarine Silverback',h:'#4FB8C4'},'2':{n:'Black Diamond Silverback',h:'#3A3A3A'},'3':{n:'Black Diamond Transparent',h:'#4B4B4B'},'4':{n:'Blue Zircon',h:'#3FA9C9'},'5':{n:'Capri Blue AB Jelly',h:'#1E8FC4'},'6':{n:'Capri Blue Silverback',h:'#1B7CAE'},'7':{n:'Capri Blue AB Transparent',h:'#2A9BD1'},'8':{n:'Chalk White Silverback',h:'#EDEBE4'},'9':{n:'Champagne Silverback',h:'#E3CBA0'},'10':{n:'Citrine Silverback',h:'#E0A83C'},'11':{n:'Clear Aquamarine Luminous',h:'#BFEAEA'},'12':{n:'Coffee Silverback',h:'#6B4A34'},'13':{n:'Crystal Silverback',h:'#E6F1F5'},'14':{n:'Dark Amethyst AB Transparent',h:'#6B3388'},'15':{n:'Dark Amethyst Silverback',h:'#572A6E'},'16':{n:'Dark Pink AB Jelly',h:'#E0507F'},'17':{n:'Dark Siam Silverback',h:'#7A1418'},'18':{n:'Emerald Silverback',h:'#0E8F57'},'19':{n:'Emerald Transparent',h:'#1FA968'},'20':{n:'Fuchsia Silverback',h:'#C21E70'},'21':{n:'Glow Aquamarine',h:'#C7ECEC'},'22':{n:'Glow Citrine',h:'#F1DD9E'},'23':{n:'Glow Hot Pink Rose',h:'#F6B7CC'},'24':{n:'Glow Light Amethyst',h:'#DEC6EC'},'25':{n:'Glow Light Peridot',h:'#DAE8A8'},'26':{n:'Glow Light Pink',h:'#FADBE4'},'27':{n:'Glow Orange',h:'#FAC896'},'28':{n:'Glow Sapphire',h:'#B7D2EC'},'29':{n:'Glow Seeryusly Orange',h:'#FFA354'},'30':{n:'Glow Transparent',h:'#EAF5F5'},'31':{n:'Grape Silverback',h:'#6A2AA0'},'32':{n:'Green Zircon Silverback',h:'#7FB236'},'33':{n:'Hot Pink',h:'#FF5FA8'},'34':{n:'Lake Blue',h:'#3D7CB3'},'35':{n:'Light Amethyst AB Jelly',h:'#C79FE0'},'36':{n:'Light Amethyst Silverback',h:'#C6A0DC'},'37':{n:'Light Peridot AB Jelly',h:'#C3D67A'},'38':{n:'Light Peridot Silverback',h:'#B8CE6C'},'39':{n:'Light Peridot Transparent Glow In The Dark',h:'#D6E7A6'},'40':{n:'Light Pink AB Jelly',h:'#F6C4D2'},'41':{n:'Light Pink Silverback',h:'#F3BFCC'},'42':{n:'Light Pink Transparent Glow In The Dark',h:'#FADFE6'},'43':{n:'Light Rose AB Jelly',h:'#F2A6B8'},'44':{n:'Light Rose Silverback',h:'#EE9CAF'},'45':{n:'Light Sapphire Silverback',h:'#7CA4D6'},'46':{n:'Light Topaz Silverback',h:'#F0C579'},'47':{n:'Midnight Purple AB',h:'#2C1848'},'48':{n:'Mine Gold',h:'#C6A046'},'49':{n:'Montana Silverback',h:'#1A3A5C'},'50':{n:'Neon Blue',h:'#1F8EF1'},'51':{n:'Neon Dark Amethyst',h:'#8B1FA8'},'52':{n:'Neon Orange SB',h:'#FF6A00'},'53':{n:'Neon Pink SB',h:'#FF2E96'},'54':{n:'Olive Silverback',h:'#6C7A2A'},'55':{n:'Opaque Burgundy',h:'#6E0F1E'},'56':{n:'Opaque Cobalt',h:'#1E3F8F'},'57':{n:'Opaque Coffee',h:'#5A3A28'},'58':{n:'Opaque Dark Amethyst',h:'#5C2680'},'59':{n:'Opaque Dark Peacock',h:'#0B5D5D'},'60':{n:'Opaque Dark Spruce Green',h:'#1F4032'},'61':{n:'Opaque Honeydew',h:'#E6F2D6'},'62':{n:'Opaque Hot Pink',h:'#F03984'},'63':{n:'Opaque Jet Black',h:'#0A0A0A'},'64':{n:'Opaque Light Amethyst',h:'#C9A8DA'},'65':{n:'Opaque Light Pink',h:'#F4C7D4'},'66':{n:'Opaque Light Sapphire',h:'#7FA6D2'},'67':{n:'Opaque Macaroon Hyacinth',h:'#E38B6E'},'68':{n:'Opaque Milk Tea Powder',h:'#D9BFA3'},'69':{n:'Opaque Mint Blue',h:'#A2E3DC'},'70':{n:'Opaque Mint Green',h:'#93E0AC'},'71':{n:'Opaque Navy Blue',h:'#10254A'},'72':{n:'Opaque Olive',h:'#757F35'},'73':{n:'Opaque Orange',h:'#F0781F'},'74':{n:'Opaque Pastel Citrine',h:'#EFD588'},'75':{n:'Opaque Rose',h:'#C2456A'},'76':{n:'Opaque Taro Purple',h:'#8E7CC3'},'77':{n:'Opaque Tiffany Blue',h:'#7ED4CB'},'78':{n:'Opaque White',h:'#F7F6F2'},'79':{n:'Opaque White 3-5mm',h:'#F5F4EF'},'80':{n:'Orange AB (SB)',h:'#F08A2E'},'81':{n:'Orange Silverback',h:'#E9711A'},'82':{n:'Orange Transparent Glow In The Dark',h:'#FAC08A'},'83':{n:'Rose Gold AB Jelly',h:'#D9A6A0'},'84':{n:'Sapphire Silverback',h:'#1B4F91'},'85':{n:'Siam AB Jelly',h:'#A5121A'},'86':{n:'Siam Silverback',h:'#9E0B0F'},'87':{n:'Topaz N',h:'#D6841F'},'88':{n:'Topaz Silverback',h:'#D2791C'},'89':{n:'Transparent',h:'#E9F3F5'},'90':{n:'Transparent Citrine AB Jelly',h:'#E8C267'},'91':{n:'Transparent Dark Amethyst',h:'#6E3A8A'},'92':{n:'Transparent Glow In The Dark',h:'#EAF5F5'},'93':{n:'Transparent Peach AB',h:'#F4B98F'},'94':{n:'Transparent Peridot',h:'#A9C934'},'95':{n:'White AB Jelly',h:'#F4F2ED'},'CB1':{n:'Crystal AB SS10',h:'#F0EFE8'},'CB2':{n:'Aqua AB SS10',h:'#8FE0D8'},'CB3':{n:'Blue Zircon SS10',h:'#A8D8E8'},'CB4':{n:'Capri Blue SS10',h:'#5DADE2'},'CB5':{n:'Citrine SS10',h:'#E4C441'},'CB6':{n:'Crystal AB - Gold Back SS10',h:'#F2E9D8'},'CB7':{n:'Crystal SS10',h:'#F5F5F0'},'CB8':{n:'Dark Siam SS10',h:'#7B1113'},'CB9':{n:'Emerald SS10',h:'#0F7A3D'},'CB10':{n:'Golden Shadow SS10',h:'#B8860B'},'CB11':{n:'Hyacinth SS10',h:'#C1440E'},'CB12':{n:'Jet Black SS10',h:'#0A0A0A'},'CB13':{n:'Light Amethyst SS10',h:'#C9A0DC'},'CB14':{n:'Light Colorado Topaz AB SS10',h:'#E8B968'},'CB15':{n:'Montana AB SS10',h:'#1B3A6B'},'CB16':{n:'Northern Light SS10',h:'#4A4A5E'},'CB17':{n:'Peacock AB SS10',h:'#1B7B7B'},'CB18':{n:'Sapphire AB SS10',h:'#2255A4'},'CB19':{n:'Siam SS10',h:'#9B111E'},'CB20':{n:'Smoked Topaz SS10',h:'#8B5A2B'},'CB21':{n:'Violet SS10',h:'#7D3C98'}};
 let DMC = DMC_DIAMOND;
 
 // Pre-compute DMC entries as arrays for fast lookup
@@ -1226,6 +1226,10 @@ function catalogForMode(mode){ return mode==='rhinestone' ? DMC_RHINESTONE : DMC
 function codePrefixLong(){ return appMode==='rhinestone' ? 'RS-' : 'DMC '; }
 // Short form: used in compact contexts like PDF rows and shopping-list rows
 function codePrefixShort(){ return appMode==='rhinestone' ? 'RS-' : 'D'; }
+// CraftBully (CB-) rhinestones: codes 'CB1'.. in the Rhinestone catalog; Mixed-mode converts (catalogType 'rhinestone') use the same CB numbers.
+function cbNum(c){ const m=/^CB(\d+)$/.exec(String(c)); return m?parseInt(m[1],10):null; }
+function codeNum(c){ const n=cbNum(c); return n!==null?1000+n:parseInt(c,10); }
+function dispCode(e,short){ if(!e) return ''; const n=cbNum(e.code); if(n!==null) return 'CB-'+n; if(e.catalogType==='rhinestone') return 'CB-'+e.code; return (short?codePrefixShort(e):codePrefixLong(e))+e.code; }
 function catalogWord(){ return appMode==='rhinestone' ? 'rhinestone' : 'DMC'; }
 function fileNamePrefix(){ return appMode==='rhinestone' ? 'rhinestone-art-' : 'diamond-art-'; }
 // Data-only lookup for the 4 rhinestone sizes (mm <-> SS label). The actual
@@ -1273,11 +1277,11 @@ function buildDmcOptionsHtml(){
   const sorted=getActiveDmcEntries().slice().sort((a,b)=>{
     const al=String(a.code).length, bl=String(b.code).length;
     if(al!==bl) return al-bl;
-    return parseInt(a.code,10)-parseInt(b.code,10);
+    return codeNum(a.code)-codeNum(b.code);
   });
   let html='<option value="">Search by code or name…</option>';
   sorted.forEach(e=>{
-    html+=`<option value="${e.code}">${codePrefixLong()}${e.code} — ${e.name}</option>`;
+    html+=`<option value="${e.code}">${dispCode(e)} — ${e.name}</option>`;
   });
   return html;
 }
@@ -1307,7 +1311,7 @@ function renderRestrictPaletteList(){
   const sorted=DMC_ENTRIES.slice().sort((a,b)=>{
     const al=String(a.code).length, bl=String(b.code).length;
     if(al!==bl) return al-bl;
-    return parseInt(a.code,10)-parseInt(b.code,10);
+    return codeNum(a.code)-codeNum(b.code);
   });
   list.innerHTML='';
   sorted.forEach(e=>{
@@ -1317,9 +1321,9 @@ function renderRestrictPaletteList(){
     row.className='leg-item';
     row.style.gridTemplateColumns='22px minmax(0,1fr) auto';
     row.innerHTML=`
-      <input type="checkbox" class="restrict-toggle" data-code="${e.code}" title="Allow ${codePrefixLong()}${e.code} — ${e.name}">
+      <input type="checkbox" class="restrict-toggle" data-code="${e.code}" title="Allow ${dispCode(e)} — ${e.name}">
       <div class="leg-info">
-        <div class="leg-sym" style="white-space:normal">${codePrefixLong()}${e.code} <span style="color:var(--muted);font-weight:400">${e.name}</span></div>
+        <div class="leg-sym" style="white-space:normal">${dispCode(e)} <span style="color:var(--muted);font-weight:400">${e.name}</span></div>
       </div>
       <div class="leg-swatch" style="background:${e.hex};color:${textCol};cursor:default;width:26px;height:26px"></div>`;
     list.appendChild(row);
@@ -1542,7 +1546,7 @@ function applyColorToSpecificCell(row,col,entry){
   indices[row*gridW+col]=idx;
   redrawSingleCell(row,col);
   buildLegend(getCurrentCounts());
-  flashShortcutToast(`✓ Cell updated to ${codePrefixLong()}${entry.code}`);
+  flashShortcutToast(`✓ Cell updated to ${dispCode(entry)}`);
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -3042,7 +3046,7 @@ function runFinalCleanup(scopeColor,areaKeys){
   if(targetSet!==undefined){
     if(targetSet.size===1){
       const only=[...targetSet][0];
-      scopeDesc=dmcMatches[only]?`${codePrefixLong()}${dmcMatches[only].code} only`:'the selected color';
+      scopeDesc=dmcMatches[only]?`${dispCode(dmcMatches[only])} only`:'the selected color';
     } else {
       scopeDesc=`${targetSet.size} selected colors`;
     }
@@ -3108,7 +3112,7 @@ function updateFinalCleanupColorBtnState(){
   if(!btn) return;
   if(highlightEnabled && highlightedIdx>=0 && dmcMatches[highlightedIdx]){
     btn.disabled=!indices.length;
-    btn.textContent=`🎯 ${codePrefixLong()}${dmcMatches[highlightedIdx].code} Only`;
+    btn.textContent=`🎯 ${dispCode(dmcMatches[highlightedIdx])} Only`;
   } else {
     btn.disabled=true;
     btn.textContent='🎯 Highlighted Color Only';
@@ -3143,7 +3147,7 @@ function renderFinalCleanupMultiList(){
       <input type="checkbox" class="final-cleanup-multi-toggle" data-idx="${i}" ${finalCleanupSelectedColors.has(i)?'checked':''}>
       <div class="leg-swatch" style="background:${hex};color:${textCol};cursor:default">${sym}</div>
       <div class="leg-info">
-        <div class="leg-sym">${sym} &nbsp;<span style="color:var(--muted);font-weight:400">${codePrefixLong()}${dmc.code}</span></div>
+        <div class="leg-sym">${sym} &nbsp;<span style="color:var(--muted);font-weight:400">${dispCode(dmc)}</span></div>
         <div class="leg-name">${dmc.name}</div>
       </div>
       <div class="leg-count">${counts[i].toLocaleString()}</div>`;
@@ -3366,7 +3370,7 @@ function buildLegend(counts,opts){
       <input type="checkbox" class="color-toggle" data-idx="${i}" checked title="Turn this color on/off">
       <div class="leg-swatch${highlightEnabled?' locate-mode':''}${highlightedIdx===i?' locating':''}" data-idx="${i}" style="${showKeyColors?`background:${hex};color:${textCol}`:`background:#fff;color:#111`}" title="${highlightEnabled?'Click to spotlight this color on the canvas':'Click to edit color'}">${sym}</div>
       <div class="leg-info">
-        <div class="leg-sym">${sym} &nbsp;<span style="color:var(--muted);font-weight:400">${codePrefixLong()}${dmc.code}</span></div>
+        <div class="leg-sym">${sym} &nbsp;<span style="color:var(--muted);font-weight:400">${dispCode(dmc)}</span></div>
         <div class="leg-name">${dmc.name}</div>
       </div>
       <div class="leg-count">${cnt.toLocaleString()}</div>`;
@@ -3448,7 +3452,7 @@ function buildDeletedColorsList(){
     row.innerHTML=`
       <div class="del-swatch" style="background:${hex};color:${textCol}">✕</div>
       <div class="del-info">
-        <div class="del-sym">${codePrefixLong()}${dmc.code}</div>
+        <div class="del-sym">${dispCode(dmc)}</div>
         <div class="del-name">${dmc.name}</div>
       </div>
       <div class="del-count">${cellCount?cellCount.toLocaleString():'—'}</div>
@@ -3484,7 +3488,7 @@ function openColorEditor(idx){
   cepSwatchBig.style.background=hex;
   cepSwatchBig.style.color=lum>140?'#000':'#fff';
   cepSwatchBig.textContent=sym;
-  cepDmcCode.textContent=`${codePrefixLong()}${dmc.code}`;
+  cepDmcCode.textContent=`${dispCode(dmc)}`;
   cepDmcName.textContent=dmc.name;
   cepColorPick.value=hex;
   cepHexInput.value=hex.toUpperCase();
@@ -3519,7 +3523,7 @@ function applyEditorColor(hexVal){
   cepSwatchBig.style.background=snappedHex;
   cepSwatchBig.style.color=lum>140?'#000':'#fff';
   cepSwatchBig.textContent=sym;
-  cepDmcCode.textContent=`${codePrefixLong()}${snapped.code}`;
+  cepDmcCode.textContent=`${dispCode(snapped)}`;
   cepDmcName.textContent=snapped.name;
   cepColorPick.value=snappedHex;
   cepHexInput.value=snappedHex;
@@ -3930,11 +3934,11 @@ function renderCleanupResults(){
     const row=document.createElement('div');
     row.className='cup-row';
     row.innerHTML=`
-      <div class="cup-row-swatch" style="background:${rgbToHex(sr,sg,sb)}" title="${codePrefixLong()}${strayDmc.code} — ${strayDmc.name}"></div>
+      <div class="cup-row-swatch" style="background:${rgbToHex(sr,sg,sb)}" title="${dispCode(strayDmc)} — ${strayDmc.name}"></div>
       <div class="cup-row-arrow">→</div>
-      <div class="cup-row-swatch" style="background:${rgbToHex(tr,tg,tb)}" title="${codePrefixLong()}${suggestDmc.code} — ${suggestDmc.name}"></div>
+      <div class="cup-row-swatch" style="background:${rgbToHex(tr,tg,tb)}" title="${dispCode(suggestDmc)} — ${suggestDmc.name}"></div>
       <div class="cup-row-info">
-        <div class="cup-row-title">${codePrefixLong()}${strayDmc.code} → ${codePrefixLong()}${suggestDmc.code}</div>
+        <div class="cup-row-title">${dispCode(strayDmc)} → ${dispCode(suggestDmc)}</div>
         <div class="cup-row-sub">${r.count} drill${r.count===1?'':'s'} in selection · ${r.confidence}% confidence</div>
       </div>
       <button class="cup-row-btn" data-i="${i}">Fix</button>`;
@@ -4967,12 +4971,12 @@ function sampleColorFromCanvasClick(e){
   });
   const sameAsCatalog=(best>=0 && dmcMatches[best].code===catalogMatch.code);
 
-  let html=`Picked ${swatch(pickedHex)} <strong>${codePrefixLong()}${catalogMatch.code}</strong> — ${catalogMatch.name}`;
+  let html=`Picked ${swatch(pickedHex)} <strong>${dispCode(catalogMatch)}</strong> — ${catalogMatch.name}`;
   if(best>=0){
     const dmc=dmcMatches[best];
     const [pr,pg,pb]=palette[best];
     const matchedHex=rgbToHex(pr,pg,pb);
-    html+=`<br>Closest already in your legend: ${swatch(matchedHex)} <strong>${codePrefixLong()}${dmc.code}</strong> — ${dmc.name}${sameAsCatalog?' (same color)':''}`;
+    html+=`<br>Closest already in your legend: ${swatch(matchedHex)} <strong>${dispCode(dmc)}</strong> — ${dmc.name}${sameAsCatalog?' (same color)':''}`;
   } else {
     html+='<br>No colors in the legend to compare against yet — generate a canvas first.';
   }
@@ -5001,7 +5005,7 @@ function sampleColorFromCanvasClick(e){
       btn1.type='button';
       btn1.className='lib-btn';
       btn1.style.flex='1';
-      btn1.textContent=`→ ${codePrefixLong()}${catalogMatch.code}`;
+      btn1.textContent=`→ ${dispCode(catalogMatch)}`;
       btn1.title=`Change just this cell to ${catalogMatch.name}`;
       btn1.addEventListener('click',()=>{
         applyColorToSpecificCell(cell.row,cell.col,catalogMatch);
@@ -5014,7 +5018,7 @@ function sampleColorFromCanvasClick(e){
         btn2.type='button';
         btn2.className='lib-btn';
         btn2.style.flex='1';
-        btn2.textContent=`→ ${codePrefixLong()}${legendEntry.code}`;
+        btn2.textContent=`→ ${dispCode(legendEntry)}`;
         btn2.title=`Change just this cell to ${legendEntry.name} (already in your legend)`;
         btn2.addEventListener('click',()=>{
           applyColorToSpecificCell(cell.row,cell.col,legendEntry);
@@ -5180,7 +5184,7 @@ function renderBoxPanel(){
   let drift=0,n=0; { const S0=sampleBoxFromPhoto(b,false); S0.forEach((px,i)=>{ const pc=palette[indices[keyAt(i)]]; if(pc){ drift+=Math.sqrt(colorDist(px,pc)); n++; } }); drift=n?drift/n:0; }
   if(drift>70){ const w=document.createElement('div'); w.className='small-note'; w.style.cssText='margin-top:0.3rem;color:#b45309'; w.textContent='Heads up: the photo here doesn\'t look like the pattern (the crop or size may have changed since you generated). Check the preview before applying.'; box.appendChild(w); }
   const info=document.createElement('div'); info.className='small-note'; info.style.marginTop='0.3rem';
-  info.textContent=(changes?'':'Nothing to change with these settings. ')+changes+' drill'+(changes===1?'':'s')+' would change'+(plan.added.length?'. New colors: '+plan.added.map(c=>codePrefixLong(c.entry)+c.entry.code+' '+c.entry.name).join(', '):'.');
+  info.textContent=(changes?'':'Nothing to change with these settings. ')+changes+' drill'+(changes===1?'':'s')+' would change'+(plan.added.length?'. New colors: '+plan.added.map(c=>dispCode(c.entry)+' '+c.entry.name).join(', '):'.');
   box.appendChild(info);
   const row=document.createElement('div'); row.style.cssText='display:flex;gap:0.4rem;margin-top:0.4rem';
   const ap=document.createElement('button'); ap.type='button'; ap.className='lib-btn'; ap.style.flex='1'; ap.textContent='Apply'; ap.disabled=!changes&&!plan.added.length;
@@ -5343,7 +5347,7 @@ function showCellPopup(row,col,pi,clickEvent){
   cpSwatch.style.background=hex;
   cpSwatch.style.color=lum>140?'#000':'#fff';
   cpSwatch.textContent=sym;
-  document.getElementById('cpDmcCode').textContent=`${codePrefixLong()}${dmc.code}`;
+  document.getElementById('cpDmcCode').textContent=`${dispCode(dmc)}`;
   document.getElementById('cpDmcName').textContent=dmc.name;
   document.getElementById('cpColorPick').value=hex;
   document.getElementById('cpHexInput').value=hex.toUpperCase();
@@ -5392,7 +5396,7 @@ function applyEditorColorToCell(hexVal){
   cpSwatch.style.background=snappedHex;
   cpSwatch.style.color=lum>140?'#000':'#fff';
   cpSwatch.textContent=sym;
-  document.getElementById('cpDmcCode').textContent=`${codePrefixLong()}${snapped.code}`;
+  document.getElementById('cpDmcCode').textContent=`${dispCode(snapped)}`;
   document.getElementById('cpDmcName').textContent=snapped.name;
   document.getElementById('cpColorPick').value=snappedHex;
   document.getElementById('cpHexInput').value=snappedHex;
@@ -5422,7 +5426,7 @@ function populateCellExistingColors(currentIdx){
     const dmc=dmcMatches[i];
     const sym=getSymbol(symbolRank[i],symSet);
     const sel=(i===currentIdx)?' selected':'';
-    html+=`<option value="${i}"${sel}>${sym} · ${codePrefixLong()}${dmc.code} · ${dmc.name}</option>`;
+    html+=`<option value="${i}"${sel}>${sym} · ${dispCode(dmc)} · ${dmc.name}</option>`;
   });
   sel.innerHTML=html;
 }
@@ -5441,7 +5445,7 @@ function applyExistingColorToCell(targetIdx){
   cpSwatch.style.background=hex;
   cpSwatch.style.color=lum>140?'#000':'#fff';
   cpSwatch.textContent=sym;
-  document.getElementById('cpDmcCode').textContent=`${codePrefixLong()}${dmc.code}`;
+  document.getElementById('cpDmcCode').textContent=`${dispCode(dmc)}`;
   document.getElementById('cpDmcName').textContent=dmc.name;
   document.getElementById('cpColorPick').value=hex;
   document.getElementById('cpHexInput').value=hex.toUpperCase();
@@ -5480,7 +5484,7 @@ document.getElementById('cpUndo').addEventListener('click',()=>{
   document.getElementById('cpSwatch').style.background=hex;
   document.getElementById('cpSwatch').style.color=lum>140?'#000':'#fff';
   document.getElementById('cpSwatch').textContent=sym;
-  document.getElementById('cpDmcCode').textContent=`${codePrefixLong()}${dmc.code}`;
+  document.getElementById('cpDmcCode').textContent=`${dispCode(dmc)}`;
   document.getElementById('cpDmcName').textContent=dmc.name;
   document.getElementById('cpColorPick').value=hex;
   document.getElementById('cpHexInput').value=hex.toUpperCase();
@@ -5631,7 +5635,7 @@ function populateMultiExistingColors(){
   items.forEach(i=>{
     const dmc=dmcMatches[i];
     const sym=getSymbol(symbolRank[i],symSet);
-    html+=`<option value="${i}">${sym} · ${codePrefixLong()}${dmc.code} · ${dmc.name}</option>`;
+    html+=`<option value="${i}">${sym} · ${dispCode(dmc)} · ${dmc.name}</option>`;
   });
   sel.innerHTML=html;
 }
@@ -5647,7 +5651,7 @@ function setMultiPendingColor(hexVal){
   sw.style.background=snappedHex;
   sw.style.color=lum>140?'#000':'#fff';
   sw.textContent='◈';
-  document.getElementById('mpDmcCode').textContent=`${codePrefixLong()}${snapped.code}`;
+  document.getElementById('mpDmcCode').textContent=`${dispCode(snapped)}`;
   document.getElementById('mpDmcName').textContent=snapped.name;
   document.getElementById('mpColorPick').value=snappedHex;
   document.getElementById('mpHexInput').value=snappedHex;
@@ -5669,7 +5673,7 @@ function setMultiPendingFromExisting(idx){
   sw.style.background=hex;
   sw.style.color=lum>140?'#000':'#fff';
   sw.textContent='◈';
-  document.getElementById('mpDmcCode').textContent=`${codePrefixLong()}${dmc.code}`;
+  document.getElementById('mpDmcCode').textContent=`${dispCode(dmc)}`;
   document.getElementById('mpDmcName').textContent=dmc.name;
   document.getElementById('mpColorPick').value=hex;
   document.getElementById('mpHexInput').value=hex;
@@ -5746,7 +5750,7 @@ function updateMultiHint(){
   if(!hintEl || !multiMode) return;
   if(highlightEnabled && highlightedIdx>=0){
     const dmc=dmcMatches[highlightedIdx];
-    const label=dmc?`${codePrefixLong()}${dmc.code}`:'the highlighted color';
+    const label=dmc?`${dispCode(dmc)}`:'the highlighted color';
     hintEl.textContent=`Drag a rectangle — only ${label} cells inside it will be selected · hold Shift to add another · hold Alt to subtract`;
   } else {
     hintEl.textContent='Drag a rectangle to select · hold Shift to add another · hold Alt to subtract';
@@ -5987,7 +5991,7 @@ function setupTooltip(cellPx,gap){
       tooltip.style.opacity='1';
       tooltip.style.left=(e.clientX+14)+'px';
       tooltip.style.top=(e.clientY+14)+'px';
-      tooltip.innerHTML=`<span style="display:inline-block;width:14px;height:14px;background:${hex};border:1px solid rgba(255,255,255,0.3);vertical-align:middle;margin-right:5px"></span>${sym} &nbsp;${codePrefixLong()}${dmc.code} — ${dmc.name} &nbsp;[${col+1},${row+1}]`;
+      tooltip.innerHTML=`<span style="display:inline-block;width:14px;height:14px;background:${hex};border:1px solid rgba(255,255,255,0.3);vertical-align:middle;margin-right:5px"></span>${sym} &nbsp;${dispCode(dmc)} — ${dmc.name} &nbsp;[${col+1},${row+1}]`;
     }
   };
   cv.onmouseleave=()=>tooltip.style.opacity='0';
@@ -6278,7 +6282,7 @@ exportPdfBtn.addEventListener('click',async()=>{
       pdf.setTextColor(0,0,0);
       pdf.setFont('helvetica','bold');
       pdf.setFontSize(7.0);
-      pdf.text(`${codePrefixShort()}${dmc.code}`,codeTextX,swatchY+swatchSize/2+0.025);
+      pdf.text(`${dispCode(dmc,1)}`,codeTextX,swatchY+swatchSize/2+0.025);
 
       const nameX=x+0.04;
       pdf.setFont('helvetica','normal');
@@ -7281,7 +7285,7 @@ function renderMasterCounterList(){
     if(a.mode!==b.mode) return a.mode<b.mode?-1:1;
     const al=String(a.code).length, bl=String(b.code).length;
     if(al!==bl) return al-bl;
-    return parseInt(a.code,10)-parseInt(b.code,10);
+    return codeNum(a.code)-codeNum(b.code);
   });
   if(!entries.length){
     listEl.innerHTML='';
@@ -7308,7 +7312,7 @@ function renderMasterCounterList(){
       <div></div>
       <div class="leg-swatch" style="background:${e.hex};color:${textCol};cursor:default">${e.mode==='rhinestone'?'◈':'◆'}</div>
       <div class="leg-info">
-        <div class="leg-sym">${prefix}${e.code}</div>
+        <div class="leg-sym">${dispCode(e)}</div>
         <div class="leg-name">${e.name}</div>
       </div>
       <div class="leg-count">${e.count.toLocaleString()}</div>`;
@@ -7324,7 +7328,7 @@ document.getElementById('addToCounterBtn').addEventListener('click',()=>{
     if(hiddenColors.has(i) || counts[i]<=0) return;
     const dmc=dmcMatches[i];
     const key=`${appMode}:${dmc.code}`;
-    if(!masterCounter[key]) masterCounter[key]={mode:appMode,code:dmc.code,name:dmc.name,hex:dmc.hex,count:0};
+    if(!masterCounter[key]) masterCounter[key]={mode:appMode,catalogType:dmc.catalogType,code:dmc.code,name:dmc.name,hex:dmc.hex,count:0};
     masterCounter[key].count+=counts[i];
     addedAnyColor=true;
   });
@@ -7348,7 +7352,7 @@ document.getElementById('exportMasterCounterBtn').addEventListener('click',()=>{
     if(a.mode!==b.mode) return a.mode<b.mode?-1:1;
     const al=String(a.code).length, bl=String(b.code).length;
     if(al!==bl) return al-bl;
-    return parseInt(a.code,10)-parseInt(b.code,10);
+    return codeNum(a.code)-codeNum(b.code);
   });
   if(!entries.length) return;
   const totalDrills=entries.reduce((s,e)=>s+e.count,0);
@@ -7363,7 +7367,7 @@ document.getElementById('exportMasterCounterBtn').addEventListener('click',()=>{
     'Code'.padEnd(10)+'Name'.padEnd(32)+'Qty',
     ...entries.map(e=>{
       const prefix=e.mode==='rhinestone'?'RS-':'D';
-      return `${prefix}${e.code}`.padEnd(10)+e.name.padEnd(32)+e.count.toLocaleString();
+      return dispCode(e,1).padEnd(10)+e.name.padEnd(32)+e.count.toLocaleString();
     })
   ];
   const safeTitle=title.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim().slice(0,80) || 'Combined Order';
@@ -7405,7 +7409,7 @@ exportTxtBtn.addEventListener('click',()=>{
     'DMC (D)',
     ...sorted.map(i=>{
       const dmc=dmcMatches[i];
-      return `${codePrefixShort()}${dmc.code} (${dmc.name}): ${counts[i].toLocaleString()}`;
+      return `${dispCode(dmc,1)} (${dmc.name}): ${counts[i].toLocaleString()}`;
     })
   ];
 
@@ -7896,7 +7900,7 @@ function applyModeUI(mode){
   }
 
   const pasteInput=document.getElementById('restrictPasteInput');
-  if(pasteInput) pasteInput.placeholder=isRhinestone?'e.g. Emerald Silverback, Siam AB Jelly, RS-12':'e.g. 310, Emerald Green, DMC 666';
+  if(pasteInput) pasteInput.placeholder=isRhinestone?'e.g. Emerald Silverback, Siam AB Jelly, RS-12, CB-9':'e.g. 310, Emerald Green, DMC 666';
 
   // The catalog just changed underneath any existing restriction/selection —
   // those codes belonged to the OLD catalog and no longer mean the same
