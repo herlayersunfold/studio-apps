@@ -831,7 +831,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-21a</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-21b</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -6704,6 +6704,7 @@ function libListLight(){
 function renderProjectLibrary(){
   return libListLight().then(items=>{
     items.sort((a,b)=>String(b.savedAt||'').localeCompare(String(a.savedAt||'')));
+    { const bx=document.getElementById('completedFolderBox'); if(bx) bx.innerHTML=''; }
     if(!items.length){ projectLibrary.innerHTML='<div class="lib-empty">No saved projects yet.</div>'; return; }
     projectLibrary.innerHTML='';
     // Search box (finds completed projects too) + Completed folder
@@ -6720,6 +6721,7 @@ function renderProjectLibrary(){
     const doneItems=folderMode?items.filter(x=>x.status==='completed'):[];
     const activeItems=folderMode?items.filter(x=>x.status!=='completed'):items;
     if(!items.length){ projectLibrary.innerHTML='<div class="lib-empty">No projects match.</div>'; return; }
+    let host=projectLibrary;
     const renderRows=(list)=>{
     list.forEach(it=>{
       const row=document.createElement('div');
@@ -6747,19 +6749,26 @@ function renderProjectLibrary(){
           return renderProjectLibrary();
         }).catch(err=>alert('Could not delete.\n\n'+err));
       });
-      projectLibrary.appendChild(row);
+      host.appendChild(row);
     });
     };
     renderRows(activeItems);
     if(folderMode&&!activeItems.length&&doneItems.length){ const n=document.createElement('div'); n.className='lib-empty'; n.textContent='Nothing outstanding — all projects are in the Completed folder.'; projectLibrary.appendChild(n); }
+    let box=document.getElementById('completedFolderBox');
+    if(!box){ box=document.createElement('div'); box.id='completedFolderBox'; projectLibrary.parentNode.insertBefore(box,projectLibrary); }
+    box.innerHTML='';
     if(doneItems.length){
       let open=false; try{ open=localStorage.getItem('studioCompletedFolderOpen')==='1'; }catch(e){}
       const fh=document.createElement('div');
-      fh.style.cssText='display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.6rem;padding:0.5rem 0.2rem;font-weight:700;font-size:0.8rem;cursor:pointer;border-top:1px solid var(--border,#ddd)';
+      fh.style.cssText='display:flex;justify-content:space-between;gap:0.5rem;margin:0 0 0.4rem;padding:0.5rem 0.6rem;font-weight:700;font-size:0.8rem;cursor:pointer;border:1px solid var(--border,#ddd);border-radius:6px;background:#fff';
       fh.innerHTML='<span>📁 Completed ('+doneItems.length+')</span><span>'+(open?'▾ Hide':'▸ Show')+'</span>';
       fh.addEventListener('click',()=>{ try{ localStorage.setItem('studioCompletedFolderOpen',open?'0':'1'); }catch(e){} renderProjectLibrary(); });
-      projectLibrary.appendChild(fh);
-      if(open) renderRows(doneItems);
+      box.appendChild(fh);
+      if(open){
+        const sc=document.createElement('div');
+        sc.style.cssText='max-height:240px;overflow-y:auto;border:1px solid var(--border,#ddd);border-radius:6px;padding:0.3rem;margin-bottom:0.6rem';
+        box.appendChild(sc); host=sc; renderRows(doneItems); host=projectLibrary;
+      }
     }
   }).catch(()=>{
     projectLibrary.innerHTML='<div class="lib-empty">In-generator saving isn\u2019t available in this browser. Use Export / Import file instead.</div>';
