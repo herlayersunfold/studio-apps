@@ -791,6 +791,10 @@ body.hand-left #dockPanelPhoto{left:54px}
       <input type="range" id="gridLineDark" min="0" max="100" value="40" step="2">
       <span class="val" id="gridLineDarkVal">40%</span>
     </div>
+    <div id="satGridPresetRow" style="display:flex;gap:0.4rem;align-items:center;margin:0.4rem 0">
+      <button type="button" class="btn btn-out" id="satGridPresetBtn" style="margin:0;flex:1" title="First click saves your current Saturation + Grid Line values. After that, one click sets both sliders to your saved numbers.">★ Save preset</button>
+      <button type="button" class="btn btn-out" id="satGridPresetResave" style="margin:0;display:none;flex:none;padding:0.45rem 0.6rem" title="Overwrite the preset with the slider values you have right now">💾</button>
+    </div>
     <button class="btn btn-out" id="exportPdfBtn" disabled>↓ Export PDF (300 DPI)</button>
     <button class="btn btn-out" id="exportTxtBtn" disabled>↓ Export Shopping List</button>
     <button class="btn btn-mystery" id="mysteryBtn" disabled>🔮 Mystery Mode</button>
@@ -831,7 +835,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-21b</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-25a</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -8457,6 +8461,31 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
   document.getElementById('helpBtn')?.addEventListener('click',()=>open());
 })();
 
+
+// ── Saturation + Grid Line PRESET (one button) ─────────────────────────────
+(function(){
+  const btn=document.getElementById('satGridPresetBtn'), re=document.getElementById('satGridPresetResave');
+  const sat=document.getElementById('pdfSaturation'), grid=document.getElementById('gridLineDark');
+  if(!btn||!sat||!grid) return;
+  const KEY='studioSatGridPreset';
+  const load=()=>{ try{ const p=JSON.parse(localStorage.getItem(KEY)||'null'); if(p&&isFinite(p.sat)&&isFinite(p.grid)) return p; }catch(e){} return null; };
+  const store=p=>{ try{ localStorage.setItem(KEY,JSON.stringify(p)); }catch(e){} };
+  const setSlider=(el,v)=>{ el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); };
+  function paint(){
+    const p=load();
+    btn.textContent=p?('★ My preset: '+p.sat+'% · '+p.grid+'%'):'★ Save preset';
+    btn.title=p?'One click sets Saturation to '+p.sat+'% and Grid Line Darkness to '+p.grid+'%. Use 💾 to save new numbers.':'First click saves your current Saturation + Grid Line values.';
+    re.style.display=p?'':'none';
+  }
+  btn.addEventListener('click',()=>{
+    const p=load();
+    if(!p){ store({sat:+sat.value,grid:+grid.value}); paint(); return; }
+    setSlider(sat,p.sat); setSlider(grid,p.grid);
+    const old=btn.textContent; btn.textContent='✓ Applied'; setTimeout(paint,900);
+  });
+  re.addEventListener('click',()=>{ store({sat:+sat.value,grid:+grid.value}); const o=re.textContent; re.textContent='✓'; setTimeout(()=>{re.textContent=o;paint();},900); });
+  paint();
+})();
 // ── DOCK LAYOUT (landscape iPad) ──────────────────────────────────────────────
 // Landscape + wide screen: the canvas fills the screen and a floating bar along the
 // bottom holds Menu / Photo / Colors plus the existing toolbar (undo, redo, edit modes,
