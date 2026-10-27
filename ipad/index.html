@@ -495,6 +495,19 @@ body.hand-right #dockPanelPhoto{left:auto;right:54px}
 body.hand-right #dockPanelColors{right:auto;left:10px}
 body.dock-on.dock-menu-open.hand-right .sidebar{right:auto;left:10px}
 body.hand-left #dockPanelPhoto{left:54px}
+
+/* ── Dock on small screens (phones): panels use the full width; the bar scrolls sideways ── */
+@media (max-width:899px){
+  body.dock-on #dockPanelPhoto,body.dock-on #dockPanelColors,body.dock-on.dock-menu-open .sidebar{left:8px !important;right:8px !important;width:auto !important}
+  body.dock-on.hand-right #dockPanelPhoto,body.dock-on.hand-right #dockPanelColors,body.dock-on.dock-menu-open.hand-right .sidebar,body.dock-on.hand-left #dockPanelPhoto{left:8px !important;right:8px !important}
+  body.dock-on header{padding:0.25rem 0.5rem;gap:0.3rem}
+  body.dock-on header .logo,body.dock-on #stickyMenuBtn{display:none}
+  body.dock-on header h1{font-size:0.95rem;letter-spacing:0.04em}
+  body.dock-on header .btn-out,body.dock-on header .mode-switch-btn{font-size:0.62rem;padding:0.25rem 0.45rem;min-height:0}
+  .dock-btn{font-size:0.75rem;padding:0.45rem 0.6rem}
+  body.dock-on.hand-right .canvas-area{padding-right:calc(0.6rem + 44px)}
+  body.dock-on.hand-left .canvas-area{padding-left:calc(0.6rem + 44px)}
+}
 </style>
 </head>
 <body>
@@ -835,7 +848,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-25a</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-27a</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -8495,8 +8508,13 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
 // Off in portrait / narrow screens, or via the header "Dock" button.
 (function(){
   const $=id=>document.getElementById(id);
-  const DOCK_MQ=window.matchMedia('(min-width: 900px) and (orientation: landscape)');
-  let pref=true; try{ pref=localStorage.getItem('studioDock')!=='off'; }catch(e){}
+  // Available on every screen size now (phones too). With no saved choice it starts ON for
+  // landscape / wide screens and OFF for a phone held upright; the header Dock button saves a choice.
+  const DOCK_MQ=window.matchMedia('(min-width: 1px)');
+  const LAND_MQ=window.matchMedia('(orientation: landscape), (min-width: 900px)');
+  const stored=()=>{ try{ return localStorage.getItem('studioDock'); }catch(e){ return null; } };
+  const getPref=()=>{ const v=stored(); return v==='on'?true:v==='off'?false:LAND_MQ.matches; };
+  let pref=getPref();
   let on=false; const st={photo:false,colors:false,menu:false};
   const home=new Map();
   let dock,toolsSlot,pPhoto,pColors,menuHead,photoSec,legendSec,deletedSec,toggleBtn,roCrop,roDock,mo;
@@ -8581,16 +8599,17 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
     if(st.photo) requestAnimationFrame(refitCrop);
   }
   function toggle(which){
-    if(which==='photo'){ st.photo=!st.photo; }
-    else if(which==='colors'){ st.colors=!st.colors; if(st.colors) st.menu=false; }
-    else if(which==='menu'){ st.menu=!st.menu; if(st.menu) st.colors=false; }
+    const narrow=window.innerWidth<900; // phones: one panel at a time so they never stack
+    if(which==='photo'){ st.photo=!st.photo; if(narrow&&st.photo){ st.colors=false; st.menu=false; } }
+    else if(which==='colors'){ st.colors=!st.colors; if(st.colors){ st.menu=false; if(narrow) st.photo=false; } }
+    else if(which==='menu'){ st.menu=!st.menu; if(st.menu){ st.colors=false; if(narrow) st.photo=false; } }
     apply();
   }
   function openBox(){
     st.photo=true; apply();
     requestAnimationFrame(()=>{ refitCrop(); const b=$('syncPhotoBoxBtn'); if(b&&sourceImage&&!/ON/.test(b.textContent)) b.click(); });
   }
-  function onCanvasReady(){ if(st.menu){ st.menu=false; st.colors=true; apply(); } }
+  function onCanvasReady(){ if(st.menu){ st.menu=false; st.colors=true; if(window.innerWidth<900) st.photo=false; apply(); } }
   function mkBtn(label,fn,title){ const b=document.createElement('button'); b.type='button'; b.className='dock-btn'; b.textContent=label; if(title) b.title=title; b.addEventListener('click',fn); return b; }
   function mkPanel(id,title,which){
     const p=document.createElement('div'); p.className='dock-panel'; p.id=id;
@@ -8719,8 +8738,9 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
   const adv=$('advancedToolsBtn');
   if(adv){
     toggleBtn=document.createElement('button'); toggleBtn.type='button'; toggleBtn.id='dockToggleBtn'; toggleBtn.className='btn-out advanced-toggle-btn';
-    toggleBtn.title='Landscape layout: canvas fills the screen with a floating bar and panels. Turn off for the original single-page layout.';
+    toggleBtn.title='Dock layout: canvas fills the screen with a floating bar and panels (works on phones too). Turn off for the original single-page layout.';
     toggleBtn.addEventListener('click',()=>{ pref=!pref; try{ localStorage.setItem('studioDock',pref?'on':'off'); }catch(e){} refresh(); });
+    try{ LAND_MQ.addEventListener('change',()=>{ if(stored()===null){ pref=getPref(); refresh(); } }); }catch(e){}
     adv.after(toggleBtn);
   }
   if(adv){
