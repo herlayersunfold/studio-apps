@@ -11,6 +11,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
+<script>/* View size: lets a phone lay the page out wider (then scales it down to fit) so it looks like the iPad version, smaller */
+try{ var __vw=localStorage.getItem('studioViewWidth'); if(__vw&&+__vw>0){ document.querySelector('meta[name="viewport"]').setAttribute('content','width='+(+__vw)+', initial-scale=1.0'); } }catch(e){}
+</script>
 <title>Art Studio — Diamond Dander</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
@@ -848,7 +851,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-27a</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-27b</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -8753,6 +8756,27 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn=>{
   try{ DOCK_MQ.addEventListener('change',refresh); }catch(e){ try{ DOCK_MQ.addListener(refresh); }catch(e2){} }
   window.__dock={setHand,get hand(){return hand;},refresh,get on(){return on;},state:st,toggle};
   refresh();
+})();
+
+// ── VIEW SIZE button: Auto / Compact / Smaller (phones) ────────────────────
+(function(){
+  const adv=document.getElementById('advancedToolsBtn'); const meta=document.querySelector('meta[name="viewport"]');
+  if(!adv||!meta) return;
+  const STEPS=[[0,'Auto'],[900,'Compact'],[1100,'Smaller'],[1300,'Tiny']];
+  let cur=0; try{ cur=+localStorage.getItem('studioViewWidth')||0; }catch(e){}
+  let idx=Math.max(0,STEPS.findIndex(x=>x[0]===cur));
+  const b=document.createElement('button'); b.type='button'; b.id='viewSizeBtn'; b.className='btn-out advanced-toggle-btn';
+  b.title='Make everything smaller so more fits on a small screen. Auto = normal size. Tap to cycle: Compact, Smaller, Tiny, back to Auto.';
+  const paint=()=>{ b.textContent='🔎 View: '+STEPS[idx][1]; };
+  b.addEventListener('click',()=>{
+    idx=(idx+1)%STEPS.length; const w=STEPS[idx][0];
+    try{ if(w) localStorage.setItem('studioViewWidth',String(w)); else localStorage.removeItem('studioViewWidth'); }catch(e){}
+    meta.setAttribute('content',w?('width='+w+', initial-scale=1.0'):'width=device-width, initial-scale=1.0');
+    paint();
+    setTimeout(()=>{ window.dispatchEvent(new Event('resize')); if(window.__dock) window.__dock.refresh(); },350);
+  });
+  paint();
+  const anchor=document.getElementById('dockHandBtn')||document.getElementById('dockToggleBtn')||adv; anchor.after(b);
 })();
 </script>
 
