@@ -851,7 +851,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-28a</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-28b</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -2014,10 +2014,12 @@ function resizeCanvasDuplicate(){
   updateSizeNote();
   if(sourceImage){ initCropCanvas(); clampPan(); renderCropPreview(); }
 
-  hiddenColors.clear();
+  // Duplicate & Resize keeps the SAME colors. Colors you had already hidden stay hidden, but the
+  // "hide colors with N or fewer drills" rule is NOT re-run here: drill counts change with the new size,
+  // so re-running it would silently drop many colors (e.g. 23 -> 10) and change the look of the design.
+  // (Press Generate Canvas to apply that rule.) The old cell positions of hidden colors no longer fit the new grid.
   hiddenColorCells={};
   let counts=getCurrentCounts();
-  applyLowCountMaster(counts);
   remapHiddenColors(counts);
   counts=getCurrentCounts();
   const ranked=sortDmcShopping(
