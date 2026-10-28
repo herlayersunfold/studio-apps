@@ -851,7 +851,7 @@ body.hand-left #dockPanelPhoto{left:54px}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
-      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-27d</div>
+      <div class="small-note" style="margin:0.3rem 0 0;font-size:0.58rem;opacity:0.7">iPad build 2026-10-28a</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -1713,6 +1713,8 @@ function syncDrillButtonsActive(){
   drillRoundBtn.classList.toggle('active', drillMM===2.8);
   drillSquareBtn.classList.toggle('active', drillMM===2.5);
   rhinestoneSizeBtns.forEach((btn,i)=>{ if(btn) btn.classList.toggle('active', SS_SIZES[i].mm===drillMM); });
+  // Duplicate & Resize starts from the pattern's CURRENT drill (so a Square pattern isn't silently turned Round)
+  try{ if(typeof resizeDrillMM!=='undefined'&&resizeDrillMM!==drillMM){ resizeDrillMM=drillMM; syncResizeDrillButtonsActive(); updateResizeSizeNote(); } }catch(e){}
 }
 
 drillRoundBtn.addEventListener('click',()=>{
@@ -1763,12 +1765,12 @@ function getCanvasGrid(){
   const dpi=getDrillsPerInch();
   if(v==='custom'){
     if(customUnitMode==='drills'){
-      const gW=Math.max(1,parseInt(document.getElementById('custWDrills').value)||90);
-      const gH=Math.max(1,parseInt(document.getElementById('custHDrills').value)||126);
+      const gW=Math.min(600,Math.max(10,parseInt(document.getElementById('custWDrills').value)||90));
+      const gH=Math.min(600,Math.max(10,parseInt(document.getElementById('custHDrills').value)||126));
       return {gridW:gW, gridH:gH, wIn:gW/dpi, hIn:gH/dpi};
     }
-    const wIn=parseFloat(document.getElementById('custW').value)||10;
-    const hIn=parseFloat(document.getElementById('custH').value)||14;
+    const wIn=Math.min(40,Math.max(4,parseFloat(document.getElementById('custW').value)||10));
+    const hIn=Math.min(60,Math.max(4,parseFloat(document.getElementById('custH').value)||14));
     return {gridW:Math.ceil(wIn*dpi), gridH:Math.ceil(hIn*dpi), wIn, hIn};
   }
   if(TUMBLER_GRIDS[v] && drillMM===2.8){
@@ -1829,12 +1831,12 @@ function getResizeCanvasGrid(){
   const dpi=getResizeDrillsPerInch();
   if(v==='custom'){
     if(resizeCustomUnitMode==='drills'){
-      const gW=Math.max(1,parseInt(document.getElementById('resizeCustWDrills').value)||90);
-      const gH=Math.max(1,parseInt(document.getElementById('resizeCustHDrills').value)||126);
+      const gW=Math.min(600,Math.max(10,parseInt(document.getElementById('resizeCustWDrills').value)||90));
+      const gH=Math.min(600,Math.max(10,parseInt(document.getElementById('resizeCustHDrills').value)||126));
       return {gridW:gW, gridH:gH, wIn:gW/dpi, hIn:gH/dpi};
     }
-    const wIn=parseFloat(document.getElementById('resizeCustW').value)||10;
-    const hIn=parseFloat(document.getElementById('resizeCustH').value)||14;
+    const wIn=Math.min(40,Math.max(4,parseFloat(document.getElementById('resizeCustW').value)||10));
+    const hIn=Math.min(60,Math.max(4,parseFloat(document.getElementById('resizeCustH').value)||14));
     return {gridW:Math.ceil(wIn*dpi), gridH:Math.ceil(hIn*dpi), wIn, hIn};
   }
   if(TUMBLER_GRIDS[v] && resizeDrillMM===2.8){
@@ -1982,6 +1984,8 @@ function resizeCanvasDuplicate(){
   // a resize invalidates them, so drop them here rather than leaving stale
   // entries sitting in the panel until the next Generate silently filters them.
   simplifyRegions=[];
+  // Selections are stored as old-grid cell numbers, which would point at the wrong cells in the new grid
+  try{ selectedCells.clear(); if(typeof updateMultiPanel==='function') updateMultiPanel(); }catch(e){}
 
   gridW=newGridW; gridH=newGridH; indices=newIndices;
   drillMM=resizeDrillMM;
