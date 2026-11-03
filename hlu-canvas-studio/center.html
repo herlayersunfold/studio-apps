@@ -192,8 +192,9 @@ function renderNotStaff(){
 async function loadOrders(){ ORDERS=await api('GET','/rest/v1/hlu_orders?select=*&order=created_at.desc')||[]; }
 
 function renderMain(){
-  $('app').innerHTML='<div class="tabs" style="margin-bottom:14px"><button data-t="orders" class="'+(TAB==='orders'?'on':'')+'">Orders'+(ORDERS.filter(o=>o.files_ready_at&&o.status!=='completed').length?'<span class="badge">'+ORDERS.filter(o=>o.files_ready_at&&o.status!=='completed').length+' to pull</span>':'')+'</button><button data-t="new" class="'+(TAB==='new'?'on':'')+'">+ New order</button><button data-t="team" class="'+(TAB==='team'?'on':'')+'">Team</button></div><div id="pane"></div>';
+  $('app').innerHTML='<div class="tabs" style="margin-bottom:14px"><button data-t="orders" class="'+(TAB==='orders'?'on':'')+'">Orders'+(ORDERS.filter(o=>o.files_ready_at&&o.status!=='completed').length?'<span class="badge">'+ORDERS.filter(o=>o.files_ready_at&&o.status!=='completed').length+' to pull</span>':'')+'</button><button data-t="new" class="'+(TAB==='new'?'on':'')+'">+ New order</button><button data-t="team" class="'+(TAB==='team'?'on':'')+'">Team</button><button id="rfBtn" class="secondary" style="margin-left:auto">↻ Refresh</button></div><div id="pane"></div>';
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{ TAB=b.dataset.t; if(TAB==='team') await loadTeam(); if(TAB==='orders'){ try{ await loadOrders(); }catch(e){} } renderMain(); });
+  const rf=$('rfBtn'); if(rf) rf.onclick=async()=>{ try{ if(builderDirty()&&!confirm('You have an image loaded in the proof builder that isn’t saved. Refreshing will clear it. Continue?')) return; BLD.a={}; BLD.b={}; await refreshAll(); toast('Refreshed'); }catch(e){ toast(e.message); } };
   if(TAB==='orders') renderOrders(); else if(TAB==='new') renderNew(); else renderTeam();
 }
 // ---------- orders ----------
@@ -396,6 +397,7 @@ function wireDetail(){
   $('delBtn').onclick=async()=>{ if(!confirm('Delete order '+o.order_number+' and its history? This can’t be undone.')) return; try{ await api('DELETE','/rest/v1/hlu_orders?id=eq.'+id); SEL=null; await loadOrders(); renderOrders(); toast('Order deleted'); }catch(e){ toast(e.message); } };
 }
 document.addEventListener('visibilitychange',()=>{ try{ if(!document.hidden && auth && auth.access_token && TAB==='orders'){ if(builderDirty()){ loadOrders().then(drawList).catch(()=>{}); } else refreshAll().catch(()=>{}); } }catch(e){} });
+setInterval(()=>{ try{ if(!document.hidden&&auth&&auth.access&&TAB==='orders'){ if(builderDirty()||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))){ loadOrders().then(drawList).catch(()=>{}); } else refreshAll().catch(()=>{}); } }catch(e){} },30000);
 async function refreshAll(){ await loadOrders(); drawList(); if(SEL) await openOrder(SEL); }
 // ---------- new order ----------
 function renderNew(){
