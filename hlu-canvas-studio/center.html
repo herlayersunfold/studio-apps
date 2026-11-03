@@ -329,21 +329,19 @@ const PROD=[['canvas','prod_canvas_path','Canvas file','The print-ready canvas']
 function productionHtml(o,approved){
   if(!approved) return '<div class="card"><h2>Production files</h2><p class="muted small">Production files unlock after the customer approves.</p></div>';
   const all=PROD.every(x=>o[x[1]]);
-  let h='<div class="card"><h2>Production files</h2><p class="muted small">Upload all three. When they’re in, send them to CraftBully. She pulls them from here and marks the order complete.</p>';
+  let h='<div class="card"><h2>Production files</h2><p class="muted small">Upload the canvas, shopping list and image. “Mark complete” emails Art by Diamond Dander automatically (with the files attached when they fit) and moves the order to the Completed folder.</p>';
   h+=PROD.map(x=>'<div class="prow"><div><b>'+x[2]+'</b><div class="small muted">'+x[3]+'</div></div><div id="pf_'+x[0]+'">'+(o[x[1]]?'<span class="muted small">Loading…</span>':'<span class="muted small">Not uploaded yet</span>')+'</div><div><input type="file" id="pfi_'+x[0]+'"></div></div>').join('');
+  const emailBox='<div class="grid2" style="margin-top:12px"><div class="field"><label>Notify (Art by Diamond Dander)</label><input id="cbEm" type="email" value="'+esc(cbEmail())+'"></div></div>';
   if(o.status==='completed'){
-    h+='<div class="note" style="margin-top:12px">✓ <b>Completed</b> '+esc(fmt(o.completed_at))+(o.completed_by?' by '+esc(o.completed_by):'')+'. This order is in the Completed folder.</div><div class="flex" style="margin-top:8px"><button class="secondary" id="reopenBtn">Reopen order</button></div>';
-  } else if(o.files_ready_at){
-    h+='<div class="note" style="margin-top:12px"><b>Ready to pull.</b> Sent to CraftBully '+esc(fmt(o.files_ready_at))+'. Download the three files above, then mark it complete.</div>'
-      +'<div class="flex" style="margin-top:8px"><button id="doneBtn">✓ Mark as complete</button><button class="secondary" id="resendBtn">Resend email</button><a class="btn secondary" id="cbMail">Open email draft instead</a></div><div class="grid2" style="margin-top:8px"><div class="field"><label>CraftBully notification email</label><input id="cbEm" type="email" value="'+esc(cbEmail())+'"></div></div>';
+    h+='<div class="note" style="margin-top:12px">✓ <b>Completed</b> '+esc(fmt(o.completed_at))+(o.completed_by?' by '+esc(o.completed_by):'')+'. This order is in the Completed folder.</div>'+emailBox+'<div class="flex"><button class="secondary" id="resendBtn">Resend email</button><button class="secondary" id="reopenBtn">Reopen order</button></div>';
   } else {
-    h+='<div class="grid2" style="margin-top:12px"><div class="field"><label>CraftBully notification email</label><input id="cbEm" type="email" value="'+esc(cbEmail())+'"></div></div><div class="flex"><button id="sendBtn" '+(all?'':'disabled')+'>Send to CraftBully</button><span class="small muted">'+(all?'Adds it to CraftBully’s “Ready to pull” list and opens an email draft.':'Upload the canvas, shopping list and image first.')+'</span></div>';
+    h+=emailBox+'<div class="flex"><button id="doneBtn" '+(all?'':'disabled')+'>✓ Mark complete &amp; email Art by Diamond Dander</button><span class="small muted">'+(all?'Moves the order to the Completed folder.':'Upload all three files first.')+'</span></div>';
   }
   return h+'</div>';
 }
 async function notifyCB(o,em){
-  try{ const tk=await getToken(); const r=await fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+tk},body:JSON.stringify({order_id:o.id,to:em,app_url:location.href.split('#')[0].split('?')[0]})});
-    if(r.ok){ await addEvent(o.id,'CraftBully was emailed at '+em,false); return true; }
+  try{ const tk=await getToken(); const r=await fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+tk},body:JSON.stringify({mode:'complete',order_id:o.id,to:em,app_url:location.href.split('#')[0].split('?')[0]})});
+    if(r.ok){ return true; }
     let msg=''; try{ msg=(await r.json()).error||''; }catch(e){} await addEvent(o.id,'Auto-email failed: '+(msg||('HTTP '+r.status)),false); toast('Email problem: '+(msg||('HTTP '+r.status))); return false;
   }catch(e){ toast('Email problem: '+e.message); return false; }
 }
@@ -360,16 +358,11 @@ function wireProduction(showImg){
         const p=id+'/'+x[0]+'-'+Date.now()+'.'+ext(f); toast('Uploading…'); await upload('hlu-private',p,f);
         await patch(id,{[x[1]]:p},x[2]+' uploaded',false); toast(x[2]+' saved'); await refreshAll(); }catch(er){ toast(er.message); } };
   });
-  const sb=$('sendBtn'); if(sb) sb.onclick=async()=>{ try{ const em=$('cbEm').value.trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter CraftBully’s email'); return; } try{ localStorage.setItem(CB_EMAIL_KEY,em); }catch(e){}
-      await patch(id,{files_ready_at:new Date().toISOString(),status:'preparing_for_production'},'Status: Preparing for production',true);
-      await addEvent(id,'Production files sent to CraftBully',false);
-      const emailed=await notifyCB(o,em);
-      if(emailed){ toast('CraftBully was emailed ✓'); await refreshAll(); }
-      else { toast('Sent. Auto-email didn’t go through, opening a draft…'); await refreshAll(); window.location.href=cbMailHref(o,em); } }catch(e){ toast(e.message); } };
-  const cm=$('cbMail'); if(cm) cm.href=cbMailHref(o,cbEmail());
-  const rs=$('resendBtn'); if(rs) rs.onclick=async()=>{ const em=$('cbEm').value.trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter an email'); return; } try{ localStorage.setItem(CB_EMAIL_KEY,em); }catch(e){} rs.disabled=true; toast('Sending…'); const ok=await notifyCB(o,em); rs.disabled=false; if(ok){ toast('Email sent to '+em+' ✓'); } await refreshAll(); };
-  const db=$('doneBtn'); if(db) db.onclick=async()=>{ if(!confirm('Mark order '+o.order_number+' complete? It moves to the Completed folder and the customer sees “Completed”.')) return; try{
-      await patch(id,{status:'completed',completed_at:new Date().toISOString(),completed_by:auth.email||null},'Status: Completed',true); toast('Moved to the Completed folder'); await refreshAll(); }catch(e){ toast(e.message); } };
+  const rs=$('resendBtn'); if(rs) rs.onclick=async()=>{ const em=$('cbEm').value.trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter an email'); return; } try{ localStorage.setItem(CB_EMAIL_KEY,em); }catch(e){} rs.disabled=true; toast('Sending…'); const ok=await notifyCB(o,em); rs.disabled=false; if(ok){ await addEvent(id,'Completion email resent to '+em,false); toast('Email sent to '+em+' ✓'); } await refreshAll(); };
+  const db=$('doneBtn'); if(db) db.onclick=async()=>{ const em=$('cbEm').value.trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter the email to notify'); return; } if(!confirm('Mark order '+o.order_number+' complete? It moves to the Completed folder, the customer sees “Completed”, and an email goes to '+em+'.')) return; try{ localStorage.setItem(CB_EMAIL_KEY,em); }catch(e){}
+      db.disabled=true; const now=new Date().toISOString();
+      await patch(id,{status:'completed',completed_at:now,completed_by:auth.email||null,files_ready_at:o.files_ready_at||now},'Status: Completed',true);
+      toast('Sending email…'); const ok=await notifyCB(o,em); toast(ok?'Completed. Art by Diamond Dander was emailed ✓':'Completed, but the email did not go through. Use Resend email.'); await refreshAll(); };
   const rb=$('reopenBtn'); if(rb) rb.onclick=async()=>{ try{ await patch(id,{status:'preparing_for_production',completed_at:null,completed_by:null},'Status: Preparing for production',true); toast('Reopened'); await refreshAll(); }catch(e){ toast(e.message); } };
 }
 function wireDetail(){

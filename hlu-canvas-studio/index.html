@@ -148,7 +148,7 @@ function bind(){
   document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openLb(+el.dataset.open));
   document.querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>act(()=>rpc('hlu_select_option',{p_token:TOKEN,p_opt:+el.dataset.pick})));
   const ag=$('agree'), ap=$('approveBtn');
-  if(ag&&ap){ ag.onchange=()=>{ ap.disabled=!ag.checked; }; ap.onclick=()=>{ if(!ag.checked) return; if(confirm('Approve this design? It will be locked for production.')) act(()=>rpc('hlu_approve',{p_token:TOKEN}),'Thank you! Your design is approved.'); }; }
+  if(ag&&ap){ ag.onchange=()=>{ ap.disabled=!ag.checked; }; ap.onclick=()=>{ if(!ag.checked) return; if(confirm('Approve this design? It will be locked for production.')) act(async()=>{ const r=await rpc('hlu_approve',{p_token:TOKEN}); try{ fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({mode:'approved',token:TOKEN,app_url:location.href.split('#')[0].split('?')[0]}),keepalive:true}).catch(()=>{}); }catch(e){} return r; },'Thank you! Your design is approved.'); }; }
   const rb=$('revBtn'); if(rb) rb.onclick=()=>{ const t=($('revText').value||'').trim(); if(t.length<8){ alert('Please describe the change in at least 8 characters.'); return; } act(()=>rpc('hlu_request_revision',{p_token:TOKEN,p_text:t}),'Your revision request was sent. We’ll be in touch when your updated previews are ready.'); };
 }
 async function act(fn,okText){
