@@ -79,7 +79,7 @@ const STATUSES=[['order_received','Order received'],['design_in_preparation','De
 const LABEL=Object.fromEntries(STATUSES);
 const SIZES=['3oz tumbler','12oz tumbler','20oz tumbler','30oz tumbler','8 × 10 in','10 × 10 in','12 × 16 in','16 × 20 in','18 × 24 in','20 × 24 in','Custom size'];
 const WM=new Image(); WM.src='watermark.png';
-const CB_EMAIL_KEY='hluCenter.cbEmail'; const cbEmail=()=>{ try{ return localStorage.getItem(CB_EMAIL_KEY)||'artbydiamonddander@craftbully.com'; }catch(e){ return 'artbydiamonddander@craftbully.com'; } };
+const CB_EMAIL_KEY='hluCenter.cbEmail'; const cbEmail=()=>{ try{ return localStorage.getItem(CB_EMAIL_KEY)||'art@craftbully.com'; }catch(e){ return 'art@craftbully.com'; } };
 const NEEDS_ACTION={order_received:'Start design',design_in_preparation:'In progress',revision_in_progress:'Revise',design_approved:'Prepare production files'};
 const actionOf=o=>o.status==='completed'?null:(o.files_ready_at?'Ready to pull':(NEEDS_ACTION[o.status]||null));
 const fmt=d=>{ try{ return new Date(d).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}); }catch(e){ return ''; } };
