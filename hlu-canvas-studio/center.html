@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>HLU × CraftBully · Order Center</title>
+<style>
+:root{--olive:#526342;--olive-d:#3f4d33;--gold:#b59a61;--ink:#25251f;--muted:#6f6f66;--line:#dedbd2;--bg:#f6f4ee;--bad:#8b3d37;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.45}
+header{background:#20251d;color:#f8f5ec;padding:14px max(16px,calc((100vw - 1180px)/2));display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+header .brand{font-family:Georgia,serif;letter-spacing:.14em;font-size:14px;text-transform:uppercase}
+header .brand b{color:#c9ae76;font-weight:400}
+header small{display:block;color:#d1cbbf;letter-spacing:0;text-transform:none;font-family:system-ui}
+main{max-width:1180px;margin:20px auto 70px;padding:0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #2221}
+h2{font-size:18px;margin:0 0 10px} h3{font-size:14px;margin:12px 0 6px}
+.muted{color:var(--muted)} .small{font-size:12px}
+button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--olive);color:#fff;font-weight:650;cursor:pointer;font-size:14px;font-family:inherit;text-decoration:none;display:inline-block}
+button:hover{background:var(--olive-d)}
+button.secondary,.btn.secondary{background:#ecebe4;color:#333}
+button.outline{background:#fff;color:var(--olive);border:1.5px solid var(--olive)}
+button.danger{background:var(--bad)}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid #ccc8bd;border-radius:8px;background:#fff;font:inherit}
+textarea{min-height:80px;resize:vertical}
+label{display:block;font-size:12.5px;font-weight:650;margin:0 0 4px}
+.field{margin:8px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{background:#ecebe4;color:#333}.tabs button.on{background:var(--olive);color:#fff}
+.tag{display:inline-block;border-radius:99px;padding:4px 10px;background:#edf0e8;color:#43553a;font-size:12px;font-weight:650;white-space:nowrap}
+.tag.act{background:#f6e3c2;color:#7a5413}.tag.done{background:#dfe6d6;color:#3f5233}
+.orow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:11px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px}
+.orow:hover{background:#f7f6f1}.orow.sel{background:#eef1e8}
+.orow:last-child{border-bottom:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chips button{padding:6px 11px;font-size:12.5px;background:#ecebe4;color:#333}.chips button.on{background:var(--olive);color:#fff}
+.layout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:14px;align-items:start}
+.thumb{width:100%;max-height:300px;object-fit:contain;background:#f1f0eb;border:1px solid #e2dfd7;border-radius:8px;display:block}
+.empty{display:grid;place-items:center;min-height:140px;background:#f5f3ee;color:#8a8a80;border-radius:8px;border:1px dashed #ccc;font-size:13px}
+.note{background:#f4f0df;border-left:4px solid var(--gold);padding:10px 12px;border-radius:6px;font-size:13px}
+.note.err{background:#f7e8e6;border-left-color:var(--bad);color:var(--bad)}
+.ev{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}.ev:last-child{border-bottom:0}
+.ev small{color:var(--muted);display:block}
+.linkbox{background:#f6f5f0;border:1px dashed #cfcabc;border-radius:8px;padding:9px 10px;font-size:12px;word-break:break-all}
+.hidden{display:none!important}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#20251d;color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+#toast.on{opacity:1}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.grid2,.grid3{grid-template-columns:1fr}}
+</style></head><body>
+<header><div class="brand">Her Layers Unfold <b>×</b> CraftBully<small>Order Center · staff only</small></div><div class="flex" id="hdrRight"></div></header>
+<main id="app"></main>
+<div id="toast"></div>
+<script>
+const SB_URL='https://ldpvavbtaanpymoaqtay.supabase.co';
+const SB_KEY='sb_publishable_5gd2vaiBrNDCkMtKB6jKAg_NjDLTVlM';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STATUSES=[['order_received','Order received'],['design_in_preparation','Design in preparation'],['ready_for_review','Ready for review'],['revision_in_progress','Revision in progress'],['design_approved','Design approved'],['preparing_for_production','Preparing for production'],['in_production','In production'],['completed','Completed']];
+const LABEL=Object.fromEntries(STATUSES);
+const SIZES=['3oz tumbler','12oz tumbler','20oz tumbler','30oz tumbler','8 × 10 in','10 × 10 in','12 × 16 in','16 × 20 in','18 × 24 in','20 × 24 in','Custom size'];
+const NEEDS_ACTION={order_received:'Start design',design_in_preparation:'In progress',revision_in_progress:'Revise',design_approved:'Prepare production files'};
+const fmt=d=>{ try{ return new Date(d).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}); }catch(e){ return ''; } };
+
+// ---------- auth + api ----------
+const AK='hluCenter.auth';
+let auth=null; try{ auth=JSON.parse(localStorage.getItem(AK)||'null'); }catch(e){}
+const saveAuth=a=>{ auth=a; try{ a?localStorage.setItem(AK,JSON.stringify(a)):localStorage.removeItem(AK); }catch(e){} };
+async function raw(method,path,{json,body,headers,token}={}){
+  const h=Object.assign({apikey:SB_KEY,Authorization:'Bearer '+(token||(auth&&auth.access)||SB_KEY)},headers||{});
+  if(json!==undefined){ h['Content-Type']='application/json'; body=JSON.stringify(json); }
+  const r=await fetch(SB_URL+path,{method,headers:h,body});
+  const t=await r.text(); let j=null; try{ j=t?JSON.parse(t):null; }catch(e){ j=t; }
+  if(!r.ok){ const e=new Error((j&&(j.message||j.msg||j.error_description||j.error))||('Request failed ('+r.status+')')); e.status=r.status; e.body=j; throw e; }
+  return j;
+}
+async function refresh(){
+  if(!auth||!auth.refresh) return false;
+  try{ const j=await raw('POST','/auth/v1/token?grant_type=refresh_token',{json:{refresh_token:auth.refresh},token:SB_KEY});
+    saveAuth({access:j.access_token,refresh:j.refresh_token,email:(j.user&&j.user.email)||auth.email,exp:Date.now()+(j.expires_in||3600)*1000-60000}); return true; }
+  catch(e){ saveAuth(null); return false; }
+}
+async function api(method,path,opts){
+  if(auth&&auth.exp&&Date.now()>auth.exp) await refresh();
+  try{ return await raw(method,path,opts); }
+  catch(e){ if(e.status===401&&await refresh()) return raw(method,path,opts); throw e; }
+}
+async function signIn(email,pw,create){
+  const j=await raw('POST',create?'/auth/v1/signup':'/auth/v1/token?grant_type=password',{json:{email,password:pw},token:SB_KEY});
+  if(!j.access_token){ return {needsConfirm:true}; }
+  saveAuth({access:j.access_token,refresh:j.refresh_token,email:(j.user&&j.user.email)||email,exp:Date.now()+(j.expires_in||3600)*1000-60000});
+  return {ok:true};
+}
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('on'),2600); }
+const pubUrl=p=>p?SB_URL+'/storage/v1/object/public/hlu-previews/'+p.split('/').map(encodeURIComponent).join('/'):null;
+async function signedUrl(path){
+  const j=await api('POST','/storage/v1/object/sign/hlu-private/'+path.split('/').map(encodeURIComponent).join('/'),{json:{expiresIn:3600}});
+  return SB_URL+'/storage/v1'+j.signedURL.replace(/^\/storage\/v1/,'');
+}
+async function upload(bucket,path,file){
+  await api('POST','/storage/v1/object/'+bucket+'/'+path.split('/').map(encodeURIComponent).join('/'),{body:file,headers:{'Content-Type':file.type||'application/octet-stream','x-upsert':'true','cache-control':'3600'}});
+}
+async function downscale(file,max){
+  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size<=12*1024*1024) return file;
+  const bmp=await createImageBitmap(file); const s=Math.min(1,max/Math.max(bmp.width,bmp.height));
+  const c=document.createElement('canvas'); c.width=Math.round(bmp.width*s); c.height=Math.round(bmp.height*s);
+  c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.92));
+  return new File([b],file.name.replace(/\.\w+$/,'')+'.jpg',{type:'image/jpeg'});
+}
+const ext=f=>((f.name.match(/\.([A-Za-z0-9]{1,5})$/)||[])[1]||'bin').toLowerCase();
+
+// ---------- state ----------
+let ORDERS=[], SEL=null, TAB='orders', FILTER='all', QUERY='', DETAIL=null, TEAM=[], ISSTAFF=false;
+const customerLink=o=>new URL('./',location.href).href+'#o='+o.token;
+
+async function boot(){
+  if(!auth){ return renderLogin(); }
+  try{ ISSTAFF=await api('POST','/rest/v1/rpc/hlu_is_staff',{json:{}}); }
+  catch(e){ saveAuth(null); return renderLogin('Please sign in again.'); }
+  renderHeader();
+  if(!ISSTAFF) return renderNotStaff();
+  await loadOrders(); renderMain();
+}
+function renderHeader(){
+  $('hdrRight').innerHTML=auth?('<span class="small" style="color:#d1cbbf">'+esc(auth.email||'')+'</span><button class="secondary" id="outBtn" style="padding:7px 12px">Sign out</button>'):'';
+  $('outBtn')&&($('outBtn').onclick=()=>{ saveAuth(null); location.reload(); });
+}
+function renderLogin(msg){
+  renderHeader();
+  $('app').innerHTML='<div class="card" style="max-width:420px;margin:40px auto"><h2>Staff sign in</h2><p class="muted small">For Her Layers Unfold and CraftBully team members. Customers use their private link, not this page.</p>'
+   +(msg?'<div class="note err" style="margin-bottom:8px">'+esc(msg)+'</div>':'')
+   +'<div class="field"><label>Email</label><input id="em" type="email" autocomplete="username"></div><div class="field"><label>Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="8+ characters"></div>'
+   +'<div class="flex"><button id="inBtn">Sign in</button><button class="secondary" id="mkBtn">Create account</button></div><p class="muted small" id="lmsg"></p>'
+   +'<p class="muted small">New team member? Create your account here, then ask HLU to add your email under Team.</p></div>';
+  const go=async create=>{
+    const em=$('em').value.trim(), pw=$('pw').value;
+    if(!em||pw.length<8){ $('lmsg').textContent='Enter your email and a password of at least 8 characters.'; return; }
+    $('lmsg').textContent='Working…';
+    try{ const r=await signIn(em,pw,create);
+      if(r.needsConfirm){ $('lmsg').textContent='Account created. Check your email and click the confirmation link, then come back and sign in.'; return; }
+      boot(); }
+    catch(e){ $('lmsg').textContent=/invalid login/i.test(e.message)?'That email or password was not accepted.':e.message; }
+  };
+  $('inBtn').onclick=()=>go(false); $('mkBtn').onclick=()=>go(true);
+  $('pw').onkeydown=e=>{ if(e.key==='Enter') go(false); };
+}
+function renderNotStaff(){
+  $('app').innerHTML='<div class="card" style="max-width:520px;margin:40px auto"><h2>Almost there</h2><p>You’re signed in as <b>'+esc(auth.email)+'</b>, but this email isn’t on the team list yet. Ask someone from HLU to add it under <b>Team</b>.</p><button id="again">Check again</button></div>';
+  $('again').onclick=boot;
+}
+async function loadOrders(){ ORDERS=await api('GET','/rest/v1/hlu_orders?select=*&order=created_at.desc')||[]; }
+
+function renderMain(){
+  $('app').innerHTML='<div class="tabs" style="margin-bottom:14px"><button data-t="orders" class="'+(TAB==='orders'?'on':'')+'">Orders</button><button data-t="new" class="'+(TAB==='new'?'on':'')+'">+ New order</button><button data-t="team" class="'+(TAB==='team'?'on':'')+'">Team</button></div><div id="pane"></div>';
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{ TAB=b.dataset.t; if(TAB==='team') await loadTeam(); if(TAB==='orders'){ try{ await loadOrders(); }catch(e){} } renderMain(); });
+  if(TAB==='orders') renderOrders(); else if(TAB==='new') renderNew(); else renderTeam();
+}
+// ---------- orders ----------
+function matches(o){
+  if(FILTER==='action'&&!NEEDS_ACTION[o.status]) return false;
+  if(FILTER!=='all'&&FILTER!=='action'&&o.status!==FILTER) return false;
+  const q=QUERY.trim().toLowerCase();
+  return !q||[o.order_number,o.customer_name,o.customer_email].some(x=>String(x||'').toLowerCase().includes(q));
+}
+function renderOrders(){
+  const pane=$('pane'), act=ORDERS.filter(o=>NEEDS_ACTION[o.status]).length;
+  pane.innerHTML='<div class="layout"><div class="card"><input id="q" placeholder="Search order #, name or email" value="'+esc(QUERY)+'"><div class="chips" id="chips"></div><div id="olist"></div></div><div id="detail"></div></div>';
+  const chips=[['all','All ('+ORDERS.length+')'],['action','Needs action ('+act+')']].concat(STATUSES.map(s=>[s[0],s[1]]));
+  $('chips').innerHTML=chips.map(c=>'<button data-f="'+c[0]+'" class="'+(FILTER===c[0]?'on':'')+'">'+esc(c[1])+'</button>').join('');
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ FILTER=b.dataset.f; renderOrders(); });
+  $('q').oninput=e=>{ QUERY=e.target.value; drawList(); };
+  drawList();
+  if(SEL) openOrder(SEL); else $('detail').innerHTML='<div class="card muted">Select an order to see its details, previews and customer link.</div>';
+}
+function drawList(){
+  const list=ORDERS.filter(matches);
+  $('olist').innerHTML=list.length?list.map(o=>'<div class="orow'+(o.id===SEL?' sel':'')+'" data-id="'+o.id+'"><div><b>'+esc(o.order_number)+'</b> · '+esc(o.customer_name||'—')+'<div class="small muted">'+esc(o.size||'')+' · '+esc(fmt(o.updated_at))+'</div></div><span class="tag '+(NEEDS_ACTION[o.status]?'act':(o.status==='completed'?'done':''))+'">'+esc(LABEL[o.status])+'</span></div>').join(''):'<p class="muted small">No orders match.</p>';
+  document.querySelectorAll('.orow').forEach(r=>r.onclick=()=>{ SEL=r.dataset.id; drawList(); openOrder(SEL); });
+}
+async function openOrder(id){
+  const o=ORDERS.find(x=>x.id===id); if(!o) return;
+  $('detail').innerHTML='<div class="card muted">Loading…</div>';
+  let revs=[],evs=[];
+  try{ [revs,evs]=await Promise.all([api('GET','/rest/v1/hlu_revisions?order_id=eq.'+id+'&order=round'),api('GET','/rest/v1/hlu_events?order_id=eq.'+id+'&order=at.desc')]); }catch(e){ toast(e.message); }
+  if(SEL!==id) return;
+  DETAIL={o,revs,evs}; drawDetail();
+}
+async function addEvent(id,msg,visible){ try{ await api('POST','/rest/v1/hlu_events',{json:{order_id:id,actor:'staff',customer_visible:!!visible,message:msg}}); }catch(e){} }
+async function patch(id,fields,eventMsg,visible){
+  const r=await api('PATCH','/rest/v1/hlu_orders?id=eq.'+id,{json:fields,headers:{Prefer:'return=representation'}});
+  const n=r&&r[0]; if(n){ const i=ORDERS.findIndex(x=>x.id===id); if(i>=0) ORDERS[i]=n; }
+  if(eventMsg) await addEvent(id,eventMsg,visible);
+  return n;
+}
+function drawDetail(){
+  const {o,revs,evs}=DETAIL, link=customerLink(o);
+  const prev=n=>{ const p=n?o.preview_b:o.preview_a; return p?'<img class="thumb" src="'+esc(pubUrl(p))+'" alt="">':'<div class="empty">No preview uploaded</div>'; };
+  const approved=!!o.approved_at;
+  const open=revs.filter(r=>!r.resolved_at).length;
+  $('detail').innerHTML=
+   '<div class="card"><div class="flex between"><h2 style="margin:0">'+esc(o.order_number)+' · '+esc(o.customer_name||'')+'</h2><span class="tag '+(NEEDS_ACTION[o.status]?'act':'')+'">'+esc(LABEL[o.status])+'</span></div>'
+   +'<p class="muted small">'+esc(o.size||'')+' · '+esc(o.drill_shape||'')+' drills · created '+esc(fmt(o.created_at))+(approved?' · <b>approved '+esc(fmt(o.approved_at))+' (Option '+(o.approved_option?'B':'A')+')</b>':'')+'</p>'
+   +'<h3>Customer link</h3><div class="linkbox">'+esc(link)+'</div><div class="flex" style="margin-top:8px"><button id="cpLink">Copy link</button><a class="btn secondary" id="mailLink">Email draft</a></div>'
+   +'<h3>Status</h3><div class="flex"><select id="stSel" style="max-width:280px">'+STATUSES.map(s=>'<option value="'+s[0]+'" '+(s[0]===o.status?'selected':'')+'>'+esc(s[1])+'</option>').join('')+'</select><button class="secondary" id="stBtn">Update status</button></div><p class="small muted">The customer sees every status change. Moving back to “Ready for review” re-opens review.</p></div>'
+   +'<div class="card"><h2>Customer & order details</h2><div class="grid2"><div class="field"><label>Name</label><input id="dName" value="'+esc(o.customer_name||'')+'"></div><div class="field"><label>Email</label><input id="dEmail" type="email" value="'+esc(o.customer_email||'')+'"></div><div class="field"><label>Canvas size</label><select id="dSize">'+SIZES.map(s=>'<option '+(s===o.size?'selected':'')+'>'+esc(s)+'</option>').join('')+(o.size&&!SIZES.includes(o.size)?'<option selected>'+esc(o.size)+'</option>':'')+'</select></div><div class="field"><label>Drill shape</label><select id="dShape"><option '+(o.drill_shape==='Round'?'selected':'')+'>Round</option><option '+(o.drill_shape==='Square'?'selected':'')+'>Square</option></select></div><div class="field"><label>Shopify order ID (later)</label><input id="dShop" value="'+esc(o.shopify_order_id||'')+'"></div></div><div class="field"><label>Internal notes (customers never see these)</label><textarea id="dNotes">'+esc(o.staff_notes||'')+'</textarea></div><button class="secondary" id="dSave">Save details</button></div>'
+   +'<div class="card"><h2>Customer’s source image</h2><div id="srcBox">'+(o.source_path?'<span class="muted small">Loading…</span>':'<div class="empty">No source image uploaded</div>')+'</div><div class="field"><label>Upload / replace source image</label><input type="file" id="srcFile" accept="image/*"></div></div>'
+   +'<div class="card"><h2>Review previews</h2><p class="muted small">Make both in the studio, then upload them here. Option A is the original conversion; Option B is the enhanced one. “Publish for review” sends the customer to their link.</p><div class="grid2"><div><h3>Option A · Original</h3>'+prev(0)+'<div class="field"><input type="file" id="pvA" accept="image/png,image/jpeg,image/webp"></div></div><div><h3>Option B · Enhanced</h3>'+prev(1)+'<div class="field"><input type="file" id="pvB" accept="image/png,image/jpeg,image/webp"></div></div></div>'
+   +'<div class="flex" style="margin-top:6px"><button id="pubBtn" '+((o.preview_a&&o.preview_b)?'':'disabled')+'>Publish for review</button><span class="small muted">'+((o.preview_a&&o.preview_b)?(approved?'Re-publishing resets the customer’s approval and needs their approval again.':'Sets the status to “Ready for review”.'):'Upload both previews first.')+'</span></div></div>'
+   +'<div class="card"><h2>Revision requests ('+o.revisions_used+' of 2 used)</h2>'+(revs.length?revs.map(r=>'<div class="ev"><b>Round '+r.round+'</b>'+(r.resolved_at?' <span class="tag done">resolved</span>':' <span class="tag act">open</span>')+'<small>'+esc(fmt(r.created_at))+'</small><div style="white-space:pre-wrap;margin-top:4px">'+esc(r.request_text)+'</div>'+(r.resolved_at?'':'<button class="secondary" style="margin-top:6px;padding:6px 10px" data-res="'+r.id+'">Mark resolved</button>')+'</div>').join(''):'<p class="muted small">No revisions requested.</p>')+(open?'<p class="small muted">Upload the updated previews above and press Publish for review.</p>':'')+'</div>'
+   +'<div class="card"><h2>Production files</h2>'+(approved?'<div id="finBox">'+(o.final_path?'<span class="muted small">Loading…</span>':'<div class="empty">No final file yet</div>')+'</div><div class="field"><label>Upload final production file (image, PDF or zip)</label><input type="file" id="finFile"></div><p class="small muted">Use the studio to export the print-ready canvas, symbol chart and drill list, then upload them here (zip them together if there are several).</p>':'<p class="muted small">Production files unlock after the customer approves.</p>')+'</div>'
+   +'<div class="card"><h2>History</h2>'+(evs.length?evs.map(e=>'<div class="ev"><small>'+esc(fmt(e.at))+' · '+esc(e.actor)+(e.customer_visible?'':' · internal')+'</small>'+esc(e.message)+'</div>').join(''):'<p class="muted small">Nothing yet.</p>')+'<div class="flex" style="margin-top:8px"><button class="danger" id="delBtn" style="padding:7px 12px">Delete this order</button></div></div>';
+  wireDetail();
+}
+function wireDetail(){
+  const {o}=DETAIL, id=o.id;
+  $('cpLink').onclick=async()=>{ try{ await navigator.clipboard.writeText(customerLink(o)); toast('Link copied'); }catch(e){ prompt('Copy this link:',customerLink(o)); } };
+  const first=(o.customer_name||'there').split(' ')[0];
+  $('mailLink').href='mailto:'+encodeURIComponent(o.customer_email||'')+'?subject='+encodeURIComponent('Your custom canvas is ready to review (Order '+o.order_number+')')+'&body='+encodeURIComponent('Hi '+first+',\n\nYour custom diamond art canvas previews are ready. Please open your private link to compare the two versions, then approve one or request an adjustment:\n\n'+customerLink(o)+'\n\nThank you!\nHer Layers Unfold × CraftBully');
+  $('stBtn').onclick=async()=>{ const v=$('stSel').value; if(v===o.status) return; try{
+      const f={status:v}; let ev='Status: '+LABEL[v];
+      if(v==='ready_for_review'){ f.selected_option=null; if(o.approved_at){ if(!confirm('This reopens review and clears the customer’s approval. Continue?')) return; f.approved_at=null; f.approved_option=null; f.approved_preview_path=null; ev+=' (approval reset)'; } }
+      await patch(id,f,ev,true); toast('Status updated'); await refreshAll(); }catch(e){ toast(e.message); } };
+  $('dSave').onclick=async()=>{ try{ await patch(id,{customer_name:$('dName').value.trim()||null,customer_email:$('dEmail').value.trim()||null,size:$('dSize').value,drill_shape:$('dShape').value,shopify_order_id:$('dShop').value.trim()||null,staff_notes:$('dNotes').value||null}); toast('Saved'); await refreshAll(); }catch(e){ toast(e.message); } };
+  const showImg=async(boxId,path,label)=>{ const b=$(boxId); if(!b||!path) return; try{ const u=await signedUrl(path); b.innerHTML=(/\.(png|jpe?g|webp|gif)$/i.test(path)?'<img class="thumb" src="'+esc(u)+'" alt="">':'')+'<div style="margin-top:6px"><a class="btn secondary" href="'+esc(u)+'" target="_blank" rel="noopener" download>Download '+esc(label)+'</a></div>'; }catch(e){ b.innerHTML='<span class="muted small">Could not load the file.</span>'; } };
+  showImg('srcBox',o.source_path,'source'); showImg('finBox',o.final_path,'final file');
+  $('srcFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ if(f.size>30*1024*1024) throw new Error('Choose a file under 30 MB.'); const p=id+'/source-'+Date.now()+'.'+ext(f); toast('Uploading…'); await upload('hlu-private',p,f); await patch(id,{source_path:p},'Source image uploaded',false); toast('Source saved'); await refreshAll(); }catch(er){ toast(er.message); } };
+  const pv=(n)=>async e=>{ const f0=e.target.files[0]; if(!f0) return; try{
+      if(!/^image\/(png|jpeg|webp)$/.test(f0.type)) throw new Error('Use a PNG, JPG or WebP image.');
+      if(o.approved_at&&!confirm('The customer already approved. Changing a preview resets the approval. Continue?')) { e.target.value=''; return; }
+      toast('Uploading…'); const f=await downscale(f0,3200); if(f.size>30*1024*1024) throw new Error('That image is over 30 MB.');
+      const p=id+'/'+(n?'b':'a')+'-'+Date.now()+'.'+ext(f); await upload('hlu-previews',p,f);
+      const fields={[n?'preview_b':'preview_a']:p,selected_option:null};
+      if(o.approved_at){ Object.assign(fields,{approved_at:null,approved_option:null,approved_preview_path:null,status:'design_in_preparation'}); }
+      else if(!['revision_in_progress','ready_for_review'].includes(o.status)) fields.status='design_in_preparation';
+      await patch(id,fields,'Preview '+(n?'B (enhanced)':'A (original)')+' uploaded',false); toast('Preview saved'); await refreshAll(); }catch(er){ toast(er.message); } };
+  $('pvA').onchange=pv(0); $('pvB').onchange=pv(1);
+  $('pubBtn').onclick=async()=>{ if(!(o.preview_a&&o.preview_b)) return;
+    if(o.approved_at&&!confirm('This clears the customer’s approval so they review again. Continue?')) return;
+    try{ await patch(id,{status:'ready_for_review',selected_option:null,approved_at:null,approved_option:null,approved_preview_path:null},'Your previews are ready for review',true);
+      const now=new Date().toISOString(); await api('PATCH','/rest/v1/hlu_revisions?order_id=eq.'+id+'&resolved_at=is.null',{json:{resolved_at:now}});
+      toast('Published. Send the customer their link.'); await refreshAll(); }catch(e){ toast(e.message); } };
+  document.querySelectorAll('[data-res]').forEach(b=>b.onclick=async()=>{ try{ await api('PATCH','/rest/v1/hlu_revisions?id=eq.'+b.dataset.res,{json:{resolved_at:new Date().toISOString()}}); await refreshAll(); }catch(e){ toast(e.message); } });
+  const ff=$('finFile'); if(ff) ff.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ if(f.size>30*1024*1024) throw new Error('Choose a file under 30 MB.'); const p=id+'/final-'+Date.now()+'.'+ext(f); toast('Uploading…'); await upload('hlu-private',p,f); await patch(id,{final_path:p},'Final production file uploaded',false); toast('Final file saved'); await refreshAll(); }catch(er){ toast(er.message); } };
+  $('delBtn').onclick=async()=>{ if(!confirm('Delete order '+o.order_number+' and its history? This can’t be undone.')) return; try{ await api('DELETE','/rest/v1/hlu_orders?id=eq.'+id); SEL=null; await loadOrders(); renderOrders(); toast('Order deleted'); }catch(e){ toast(e.message); } };
+}
+document.addEventListener('visibilitychange',()=>{ try{ if(!document.hidden && auth && auth.access_token && TAB==='orders') refreshAll().catch(()=>{}); }catch(e){} });
+async function refreshAll(){ await loadOrders(); drawList(); if(SEL) await openOrder(SEL); }
+// ---------- new order ----------
+function renderNew(){
+  $('pane').innerHTML='<div class="card" style="max-width:720px"><h2>New order</h2><p class="muted small">Enter the CraftBully order number, the customer’s details and the size they bought. After saving you’ll get their private link.</p><div class="grid2"><div class="field"><label>CraftBully order number *</label><input id="nNo" placeholder="e.g. CB-1001"></div><div class="field"><label>Customer name</label><input id="nName"></div><div class="field"><label>Customer email</label><input id="nEmail" type="email"></div><div class="field"><label>Canvas size</label><select id="nSize">'+SIZES.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select></div><div class="field"><label>Drill shape</label><select id="nShape"><option>Round</option><option>Square</option></select></div><div class="field"><label>Shopify order ID (optional, for later)</label><input id="nShop"></div></div><div class="field"><label>Customer’s uploaded image</label><input type="file" id="nSrc" accept="image/*"></div><button id="nGo">Create order</button><p class="small muted" id="nMsg"></p></div>';
+  $('nGo').onclick=async()=>{
+    const no=$('nNo').value.trim(); if(!no){ $('nMsg').textContent='Enter the order number.'; return; }
+    $('nGo').disabled=true; $('nMsg').textContent='Saving…';
+    try{
+      const r=await api('POST','/rest/v1/hlu_orders',{json:{order_number:no,customer_name:$('nName').value.trim()||null,customer_email:$('nEmail').value.trim()||null,size:$('nSize').value,drill_shape:$('nShape').value,shopify_order_id:$('nShop').value.trim()||null},headers:{Prefer:'return=representation'}});
+      const o=r[0]; await addEvent(o.id,'Order received',true);
+      const f=$('nSrc').files[0];
+      if(f){ if(f.size>30*1024*1024){ toast('Order saved, but the image is over 30 MB. Add it later.'); } else { const p=o.id+'/source-'+Date.now()+'.'+ext(f); await upload('hlu-private',p,f); await patch(o.id,{source_path:p},'Source image uploaded',false); } }
+      await loadOrders(); SEL=o.id; TAB='orders'; FILTER='all'; QUERY=''; renderMain(); toast('Order created');
+    }catch(e){ $('nMsg').textContent=/duplicate|unique|23505/i.test(e.message)?'That order number already exists.':e.message; $('nGo').disabled=false; }
+  };
+}
+// ---------- team ----------
+async function loadTeam(){ try{ TEAM=await api('GET','/rest/v1/hlu_staff?select=email&order=email'); }catch(e){ TEAM=[]; } }
+function renderTeam(){
+  $('pane').innerHTML='<div class="card" style="max-width:620px"><h2>Team</h2><p class="muted small">Everyone here can sign in to this Order Center and sees everything. Add the email each person uses to create their account.</p>'+TEAM.map(t=>'<div class="ev flex between"><span>'+esc(t.email)+'</span>'+(t.email.toLowerCase()===String(auth.email||'').toLowerCase()?'<span class="small muted">you</span>':'<button class="danger" style="padding:5px 10px" data-rm="'+esc(t.email)+'">Remove</button>')+'</div>').join('')+'<div class="flex" style="margin-top:12px"><input id="tEm" type="email" placeholder="name@example.com" style="flex:1;min-width:200px"><button id="tAdd">Add</button></div></div>';
+  $('tAdd').onclick=async()=>{ const em=$('tEm').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter a valid email'); return; } try{ await api('POST','/rest/v1/hlu_staff',{json:{email:em}}); await loadTeam(); renderTeam(); toast('Added'); }catch(e){ toast(/duplicate|23505/i.test(e.message)?'Already on the team':e.message); } };
+  document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ if(!confirm('Remove '+b.dataset.rm+'?')) return; try{ await api('DELETE','/rest/v1/hlu_staff?email=eq.'+encodeURIComponent(b.dataset.rm)); await loadTeam(); renderTeam(); }catch(e){ toast(e.message); } });
+}
+boot();
+</script></body></html>

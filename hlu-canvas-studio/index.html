@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Custom Canvas Studio · Her Layers Unfold × CraftBully</title>
+<style>
+:root{--olive:#526342;--olive-d:#3f4d33;--gold:#b59a61;--ink:#25251f;--muted:#6f6f66;--line:#dedbd2;--bg:#f8f6f0;--card:#fff;--bad:#8b3d37;--good:#446339;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:#20251d;color:#f8f5ec;padding:16px max(16px,calc((100vw - 1060px)/2))}
+header .brand{font-family:Georgia,"Times New Roman",serif;letter-spacing:.14em;font-size:15px;text-transform:uppercase}
+header .brand b{color:#c9ae76;font-weight:400}
+header small{display:block;color:#d1cbbf;margin-top:2px}
+main{max-width:1060px;margin:22px auto 60px;padding:0 16px}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:26px;font-weight:600;margin:0 0 4px}
+h2{font-size:18px;margin:0 0 10px}
+h3{font-size:15px;margin:0 0 6px}
+.muted{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px #2221}
+.pill{display:inline-block;border-radius:99px;padding:5px 11px;background:#edf0e8;color:#43553a;font-size:13px;font-weight:650}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px;padding:0;list-style:none}
+.steps li{font-size:12px;padding:6px 10px;border-radius:99px;background:#eceee7;color:#6b6c63}
+.steps li.done{background:#dfe6d6;color:#3f5233}
+.steps li.now{background:var(--olive);color:#fff;font-weight:650}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.opt{border:2px solid #e1dfd6;border-radius:14px;padding:12px;background:#fff;display:flex;flex-direction:column}
+.opt.chosen{border-color:var(--olive);box-shadow:0 0 0 3px #52634224}
+.opt img{width:100%;height:min(54vh,430px);object-fit:contain;background:#f3f1ec;border-radius:9px;cursor:zoom-in;display:block}
+.opt .empty{display:grid;place-items:center;height:260px;background:#f5f3ee;color:#8a8a80;border-radius:9px;border:1px dashed #ccc}
+.opt p{margin:8px 0;font-size:13px}
+button{border:0;border-radius:10px;padding:12px 16px;background:var(--olive);color:#fff;font-weight:650;cursor:pointer;font-size:15px;font-family:inherit}
+button:hover{background:var(--olive-d)}
+button.outline{background:#fff;color:var(--olive);border:1.5px solid var(--olive)}
+button.secondary{background:#ecebe4;color:#333}
+button:disabled{opacity:.5;cursor:not-allowed}
+textarea{width:100%;min-height:96px;padding:11px;border:1px solid #ccc8bd;border-radius:10px;font:inherit;resize:vertical}
+.note{background:#f4f0df;border-left:4px solid var(--gold);padding:12px 14px;border-radius:6px;font-size:14px}
+.ok{background:#eaf0e4;border-left-color:var(--olive)}
+.err{background:#f7e8e6;border-left-color:var(--bad);color:var(--bad)}
+.row{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.row small{color:var(--muted);display:block}
+.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+label.check input{margin-top:4px;width:18px;height:18px}
+#lb{position:fixed;inset:0;background:#000d;display:none;flex-direction:column;z-index:50}
+#lb.on{display:flex}
+#lb .bar{display:flex;gap:8px;padding:10px;justify-content:center;flex-wrap:wrap}
+#lb .bar button{padding:9px 14px}
+#lb .view{flex:1;overflow:auto;display:grid;place-items:center;padding:8px}
+#lb img{max-width:100%;max-height:100%;transition:none}
+#lb img.zoom{max-width:none;max-height:none;width:220%}
+@media(max-width:720px){.opts{grid-template-columns:1fr}.opt img{height:46vh}h1{font-size:22px}}
+</style></head><body>
+<header><div class="brand">Her Layers Unfold <b>×</b> CraftBully</div><small>Custom Canvas Studio</small></header>
+<main id="app"><div class="card"><p class="muted">Loading your order…</p></div></main>
+<div id="lb"><div class="bar"><button class="secondary" id="lbA">A · Original</button><button class="secondary" id="lbB">B · Enhanced</button><button class="secondary" id="lbZ">🔍 Zoom</button><button id="lbX">Close</button></div><div class="view"><img id="lbImg" alt="Preview"></div></div>
+
+<script>
+const SB_URL='https://ldpvavbtaanpymoaqtay.supabase.co';
+const SB_KEY='sb_publishable_5gd2vaiBrNDCkMtKB6jKAg_NjDLTVlM';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STEPS=[['order_received','Order received'],['design_in_preparation','Design in preparation'],['ready_for_review','Ready for review'],['revision_in_progress','Revision in progress'],['design_approved','Design approved'],['preparing_for_production','Preparing for production'],['in_production','In production'],['completed','Completed']];
+const LABEL=Object.fromEntries(STEPS);
+let TOKEN=null, ORDER=null, busy=false, lbWhich=0;
+
+function getToken(){
+  const h=(location.hash||'').replace(/^#/,'');
+  const m=h.match(/(?:^|&)o=([A-Za-z0-9]{20,128})/)||(location.search||'').match(/[?&]o=([A-Za-z0-9]{20,128})/);
+  return m?m[1]:null;
+}
+async function rpc(fn,args){
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const t=await r.text(); let j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+  if(!r.ok){ throw new Error((j&&(j.message||j.hint))||'Something went wrong. Please try again.'); }
+  return j;
+}
+const previewUrl=p=>p?SB_URL+'/storage/v1/object/public/hlu-previews/'+p.split('/').map(encodeURIComponent).join('/'):null;
+const fmt=d=>{ try{ return new Date(d).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}); }catch(e){ return ''; } };
+
+function tracker(o){
+  const showRev=o.revisions_used>0||o.status==='revision_in_progress';
+  const list=STEPS.filter(s=>s[0]!=='revision_in_progress'||showRev);
+  const idx=list.findIndex(s=>s[0]===o.status);
+  return '<ol class="steps">'+list.map((s,i)=>'<li class="'+(i<idx?'done':i===idx?'now':'')+'">'+(i<idx?'✓ ':'')+esc(s[1])+'</li>').join('')+'</ol>';
+}
+function optCard(o,n){
+  const url=previewUrl(n?o.preview_b:o.preview_a);
+  const open=o.status==='ready_for_review'&&!o.approved_at;
+  const chosen=o.selected_option===n;
+  return '<div class="opt'+(chosen?' chosen':'')+'"><h3>Option '+(n?'B · Enhanced conversion':'A · Original conversion')+'</h3>'
+   +(url?'<img src="'+esc(url)+'" alt="Option '+(n?'B':'A')+'" data-open="'+n+'">':'<div class="empty">Preview not available</div>')
+   +'<p class="muted">'+(n?'The same image, adjusted for clarity and diamond art: brightness, contrast, and some tiny details simplified.':'Your uploaded image converted to your canvas size, with no enhancements.')+'</p>'
+   +(open?'<button data-pick="'+n+'" class="'+(chosen?'':'outline')+'" '+(url?'':'disabled')+'>'+(chosen?'✓ Selected':'Select this version')+'</button>':'')
+   +'</div>';
+}
+function eventsHtml(o){
+  const ev=(o.events||[]).slice().reverse();
+  if(!ev.length) return '';
+  return '<div class="card"><h2>Order history</h2>'+ev.map(e=>'<div class="row"><small>'+esc(fmt(e.at))+'</small>'+esc(e.message)+'</div>').join('')+'</div>';
+}
+function render(msg){
+  const o=ORDER, app=$('app');
+  if(!o){ return; }
+  const left=Math.max(0,2-o.revisions_used);
+  let body='';
+  if(o.approved_at){
+    const url=previewUrl(o.approved_option?o.preview_b:o.preview_a);
+    body='<div class="card"><div class="note ok"><b>Your design is approved</b> on '+esc(fmt(o.approved_at))+' (Option '+(o.approved_option?'B · Enhanced':'A · Original')+'). It is now locked and heading to production. Thank you!</div>'
+      +(url?'<div style="margin-top:14px;max-width:560px"><img src="'+esc(url)+'" alt="Approved design" style="width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in" data-open="'+(o.approved_option?1:0)+'"></div>':'')+'</div>';
+  } else if(o.status==='ready_for_review'){
+    body='<div class="card"><h2>Choose your favorite</h2><p>These are two versions of <b>the same image</b> you uploaded, shown as the real diamond art pattern. Tap a picture to zoom in, choose the one you like, then approve it or ask for an adjustment.</p>'
+      +'<div class="opts">'+optCard(o,0)+optCard(o,1)+'</div></div>'
+      +'<div class="card"><h2>Approve your design</h2>'
+      +(o.selected_option===null?'<p class="muted">Select Option A or B above to continue.</p>':'<p>You selected <b>Option '+(o.selected_option?'B · Enhanced':'A · Original')+'</b>.</p><label class="check"><input type="checkbox" id="agree"> <span>I approve this design. I understand it will be locked and sent to production, and that I can’t change it afterward.</span></label><div style="margin-top:12px"><button id="approveBtn" disabled>Approve design</button></div>')
+      +'</div>'
+      +'<div class="card"><h2>Need an adjustment?</h2>'
+      +(left>0?'<p>You have <b>'+left+' of 2</b> revision round'+(left===1?'':'s')+' remaining. Revisions adjust <b>this same image</b>. Replacing it with a different image isn’t included.</p><textarea id="revText" maxlength="2000" placeholder="Tell us what to change, e.g. “brighten her face”, “remove the small text in the corner”."></textarea><div style="margin-top:10px"><button class="secondary" id="revBtn">Send revision request ('+(o.revisions_used+1)+' of 2)</button></div>':'<div class="note">No revision rounds remain. Please approve one of the two versions above.</div>')
+      +'</div>';
+  } else if(o.status==='revision_in_progress'){
+    body='<div class="card"><div class="note">We received your adjustment request and are working on it. You’ll get a message when your updated previews are ready. Revision rounds remaining: <b>'+left+' of 2</b>.</div></div>';
+  } else if(o.status==='order_received'||o.status==='design_in_preparation'){
+    body='<div class="card"><div class="note">Your order is in. We’re preparing two versions of your image as diamond art. You’ll get a message when they’re ready to review.</div></div>';
+  } else {
+    body='<div class="card"><div class="note ok">Your design is approved. Current status: <b>'+esc(LABEL[o.status]||o.status)+'</b>.</div></div>';
+  }
+  app.innerHTML='<div class="card"><div class="flex" style="justify-content:space-between"><div><h1>Order '+esc(o.order_number)+'</h1><div class="muted">'+(o.customer_name?esc(o.customer_name)+' · ':'')+esc(o.size||'')+(o.drill_shape?' · '+esc(o.drill_shape)+' drills':'')+'</div></div><span class="pill">'+esc(LABEL[o.status]||o.status)+'</span></div>'+tracker(o)
+    +'<div style="margin-top:8px"><button class="secondary" id="refreshBtn" style="padding:8px 12px;font-size:13px">↻ Refresh</button></div></div>'
+    +(msg?'<div class="note '+(msg.err?'err':'ok')+'" style="margin-bottom:16px">'+esc(msg.text)+'</div>':'')
+    +body+eventsHtml(o);
+  bind();
+}
+function bind(){
+  $('refreshBtn')&&($('refreshBtn').onclick=()=>load());
+  document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openLb(+el.dataset.open));
+  document.querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>act(()=>rpc('hlu_select_option',{p_token:TOKEN,p_opt:+el.dataset.pick})));
+  const ag=$('agree'), ap=$('approveBtn');
+  if(ag&&ap){ ag.onchange=()=>{ ap.disabled=!ag.checked; }; ap.onclick=()=>{ if(!ag.checked) return; if(confirm('Approve this design? It will be locked for production.')) act(()=>rpc('hlu_approve',{p_token:TOKEN}),'Thank you! Your design is approved.'); }; }
+  const rb=$('revBtn'); if(rb) rb.onclick=()=>{ const t=($('revText').value||'').trim(); if(t.length<8){ alert('Please describe the change in at least 8 characters.'); return; } act(()=>rpc('hlu_request_revision',{p_token:TOKEN,p_text:t}),'Your revision request was sent. We’ll be in touch when your updated previews are ready.'); };
+}
+async function act(fn,okText){
+  if(busy) return; busy=true;
+  try{ ORDER=await fn(); render(okText?{text:okText}:null); }
+  catch(e){ render({err:true,text:e.message||String(e)}); }
+  busy=false;
+}
+async function load(){
+  if(!TOKEN) return;
+  try{
+    const o=await rpc('hlu_get_order',{p_token:TOKEN});
+    if(!o){ $('app').innerHTML='<div class="card"><div class="note err"><b>We couldn’t find this order.</b> Please check that you opened the full link from your email, or contact CraftBully for help.</div></div>'; return; }
+    ORDER=o; render();
+  }catch(e){ $('app').innerHTML='<div class="card"><div class="note err">We couldn’t load your order right now. Please refresh in a moment.</div></div>'; }
+}
+function openLb(n){
+  const o=ORDER; if(!o) return; lbWhich=n;
+  const url=previewUrl(n?o.preview_b:o.preview_a); if(!url) return;
+  $('lbImg').src=url; $('lbImg').classList.remove('zoom'); $('lb').classList.add('on');
+  const both=!o.approved_at; $('lbA').style.display=$('lbB').style.display=both?'':'none';
+}
+$('lbX').onclick=()=>$('lb').classList.remove('on');
+$('lbZ').onclick=()=>$('lbImg').classList.toggle('zoom');
+$('lbA').onclick=()=>openLb(0); $('lbB').onclick=()=>openLb(1);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('lb').classList.remove('on'); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&TOKEN&&!busy) load(); });
+
+TOKEN=getToken();
+if(!TOKEN){
+  $('app').innerHTML='<div class="card"><h1>Welcome</h1><p>To review your custom canvas, please open the <b>private link</b> we sent you by email. Each link opens one order.</p><p class="muted">Can’t find it? Contact CraftBully and mention your order number.</p></div>';
+} else load();
+</script></body></html>
