@@ -26,6 +26,7 @@ h3{font-size:15px;margin:0 0 6px}
 .steps li.now{background:var(--olive);color:#fff;font-weight:650}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .opt{border:2px solid #e1dfd6;border-radius:14px;padding:12px;background:#fff;display:flex;flex-direction:column}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin:10px 0 0}.meta div{background:#f6f5f0;border-radius:8px;padding:6px 8px}.meta dt{font-size:11px;color:var(--muted)}.meta dd{margin:0;font-weight:650;font-size:14px}.mnote{font-size:13px;margin:8px 0 0}
 .opt.chosen{border-color:var(--olive);box-shadow:0 0 0 3px #52634224}
 .opt img{width:100%;height:min(54vh,430px);object-fit:contain;background:#f3f1ec;border-radius:9px;cursor:zoom-in;display:block}
 .opt .empty{display:grid;place-items:center;height:260px;background:#f5f3ee;color:#8a8a80;border-radius:9px;border:1px dashed #ccc}
@@ -87,12 +88,21 @@ function tracker(o){
   const idx=list.findIndex(s=>s[0]===o.status);
   return '<ol class="steps">'+list.map((s,i)=>'<li class="'+(i<idx?'done':i===idx?'now':'')+'">'+(i<idx?'✓ ':'')+esc(s[1])+'</li>').join('')+'</ol>';
 }
+function metaHtml(o,n){
+  const m=((o.preview_meta||{})[n?'b':'a'])||{}; const rows=[];
+  if(m.w||m.h) rows.push(['Canvas size',(m.w||'?')+' × '+(m.h||'?')+' '+(m.unit||'in')]);
+  if(m.drills) rows.push(['Drill count',m.drills]);
+  if(m.colors) rows.push(['Colors',m.colors]);
+  if(!rows.length&&!m.notes) return '';
+  return '<dl class="meta">'+rows.map(r=>'<div><dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd></div>').join('')+'</dl>'+(m.notes?'<p class="mnote"><b>Notes:</b> '+esc(m.notes)+'</p>':'');
+}
 function optCard(o,n){
   const url=previewUrl(n?o.preview_b:o.preview_a);
   const open=o.status==='ready_for_review'&&!o.approved_at;
   const chosen=o.selected_option===n;
   return '<div class="opt'+(chosen?' chosen':'')+'"><h3>Option '+(n?'B · Enhanced conversion':'A · Original conversion')+'</h3>'
    +(url?'<img src="'+esc(url)+'" alt="Option '+(n?'B':'A')+'" data-open="'+n+'">':'<div class="empty">Preview not available</div>')
+   +metaHtml(o,n)
    +'<p class="muted">'+(n?'The same image, adjusted for clarity and diamond art: brightness, contrast, and some tiny details simplified.':'Your uploaded image converted to your canvas size, with no enhancements.')+'</p>'
    +(open?'<button data-pick="'+n+'" class="'+(chosen?'':'outline')+'" '+(url?'':'disabled')+'>'+(chosen?'✓ Selected':'Select this version')+'</button>':'')
    +'</div>';
