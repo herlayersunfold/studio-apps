@@ -4,6 +4,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>HLU × CraftBully · Order Center</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#20251d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Order Center">
 <style>
 :root{--olive:#526342;--olive-d:#3f4d33;--gold:#b59a61;--ink:#25251f;--muted:#6f6f66;--line:#dedbd2;--bg:#f6f4ee;--bad:#8b3d37;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 *{box-sizing:border-box}
@@ -402,5 +408,6 @@ function renderTeam(){
   $('tAdd').onclick=async()=>{ const em=$('tEm').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter a valid email'); return; } try{ await api('POST','/rest/v1/hlu_staff',{json:{email:em}}); await loadTeam(); renderTeam(); toast('Added'); }catch(e){ toast(/duplicate|23505/i.test(e.message)?'Already on the team':e.message); } };
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ if(!confirm('Remove '+b.dataset.rm+'?')) return; try{ await api('DELETE','/rest/v1/hlu_staff?email=eq.'+encodeURIComponent(b.dataset.rm)); await loadTeam(); renderTeam(); }catch(e){ toast(e.message); } });
 }
+if('serviceWorker' in navigator&&location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();
 </script></body></html>
