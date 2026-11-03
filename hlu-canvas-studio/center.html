@@ -118,7 +118,19 @@ const ext=f=>((f.name.match(/\.([A-Za-z0-9]{1,5})$/)||[])[1]||'bin').toLowerCase
 let ORDERS=[], SEL=null, TAB='orders', FILTER='all', QUERY='', DETAIL=null, TEAM=[], ISSTAFF=false;
 const customerLink=o=>new URL('./',location.href).href+'#o='+o.token;
 
+function recoveryParams(){ try{ const h=new URLSearchParams(location.hash.replace(/^#/,'')); if(h.get('type')==='recovery'&&h.get('access_token')) return {token:h.get('access_token'),refresh:h.get('refresh_token')||'',exp:+h.get('expires_in')||3600}; if(h.get('error_description')) return {error:h.get('error_description').replace(/\+/g,' ')}; }catch(e){} return null; }
+function renderReset(rp){
+  renderHeader();
+  if(rp.error){ history.replaceState(null,'',location.pathname); return renderLogin('That reset link did not work ('+rp.error+'). Request a new one with Forgot password.'); }
+  $('app').innerHTML='<div class="card" style="max-width:420px;margin:40px auto"><h2>Choose a new password</h2><div class="field"><label>New password</label><input id="np" type="password" autocomplete="new-password" placeholder="8+ characters"></div><button id="npGo">Save password</button><p class="muted small" id="lmsg"></p></div>';
+  $('npGo').onclick=async()=>{ const pw=$('np').value; if(pw.length<8){ $('lmsg').textContent='Use at least 8 characters.'; return; }
+    try{ const u=await raw('PUT','/auth/v1/user',{json:{password:pw},token:rp.token});
+      saveAuth({access:rp.token,refresh:rp.refresh,email:(u&&u.email)||'',exp:Date.now()+rp.exp*1000-60000});
+      history.replaceState(null,'',location.pathname); toast('Password updated'); boot(); }
+    catch(e){ $('lmsg').textContent=e.message; } };
+}
 async function boot(){
+  const rp=recoveryParams(); if(rp) return renderReset(rp);
   if(!auth){ return renderLogin(); }
   try{ ISSTAFF=await api('POST','/rest/v1/rpc/hlu_is_staff',{json:{}}); }
   catch(e){ saveAuth(null); return renderLogin('Please sign in again.'); }
@@ -136,6 +148,7 @@ function renderLogin(msg){
    +(msg?'<div class="note err" style="margin-bottom:8px">'+esc(msg)+'</div>':'')
    +'<div class="field"><label>Email</label><input id="em" type="email" autocomplete="username"></div><div class="field"><label>Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="8+ characters"></div>'
    +'<div class="flex"><button id="inBtn">Sign in</button><button class="secondary" id="mkBtn">Create account</button></div><p class="muted small" id="lmsg"></p>'
+   +'<p class="small"><a href="#" id="fpw">Forgot password?</a></p>'
    +'<p class="muted small">New team member? Create your account here, then ask HLU to add your email under Team.</p></div>';
   const go=async create=>{
     const em=$('em').value.trim(), pw=$('pw').value;
@@ -147,6 +160,10 @@ function renderLogin(msg){
     catch(e){ $('lmsg').textContent=/invalid login/i.test(e.message)?'That email or password was not accepted.':e.message; }
   };
   $('inBtn').onclick=()=>go(false); $('mkBtn').onclick=()=>go(true);
+  $('fpw').onclick=async e=>{ e.preventDefault(); const em=$('em').value.trim(); if(!em){ $('lmsg').textContent='Type your email above first, then tap Forgot password.'; return; }
+    $('lmsg').textContent='Sending…';
+    try{ await raw('POST','/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+location.pathname),{json:{email:em},token:SB_KEY}); $('lmsg').textContent='If that email has an account, a reset link is on its way. Check spam too.'; }
+    catch(er){ $('lmsg').textContent=er.message; } };
   $('pw').onkeydown=e=>{ if(e.key==='Enter') go(false); };
 }
 function renderNotStaff(){
