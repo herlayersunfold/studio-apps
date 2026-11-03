@@ -102,6 +102,7 @@ async function refresh(){
     saveAuth({access:j.access_token,refresh:j.refresh_token,email:(j.user&&j.user.email)||auth.email,exp:Date.now()+(j.expires_in||3600)*1000-60000}); return true; }
   catch(e){ saveAuth(null); return false; }
 }
+async function getToken(){ if(auth&&auth.exp&&Date.now()>auth.exp) await refresh(); return (auth&&auth.access)||SB_KEY; }
 async function api(method,path,opts){
   if(auth&&auth.exp&&Date.now()>auth.exp) await refresh();
   try{ return await raw(method,path,opts); }
@@ -354,7 +355,11 @@ function wireProduction(showImg){
   });
   const sb=$('sendBtn'); if(sb) sb.onclick=async()=>{ try{ const em=$('cbEm').value.trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ toast('Enter CraftBully’s email'); return; } try{ localStorage.setItem(CB_EMAIL_KEY,em); }catch(e){}
       await patch(id,{files_ready_at:new Date().toISOString(),status:'preparing_for_production'},'Status: Preparing for production',true);
-      await addEvent(id,'Production files sent to CraftBully',false); toast('Sent. Opening an email draft…'); await refreshAll(); window.location.href=cbMailHref(o,em); }catch(e){ toast(e.message); } };
+      await addEvent(id,'Production files sent to CraftBully',false);
+      let emailed=false;
+      try{ const tk=await getToken(); const r=await fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+tk},body:JSON.stringify({order_id:id,to:em,app_url:location.href.split('#')[0].split('?')[0]})}); emailed=r.ok; }catch(e){}
+      if(emailed){ await addEvent(id,'CraftBully was emailed at '+em,false); toast('CraftBully was emailed ✓'); await refreshAll(); }
+      else { toast('Sent. Auto-email isn’t set up, opening a draft…'); await refreshAll(); window.location.href=cbMailHref(o,em); } }catch(e){ toast(e.message); } };
   const cm=$('cbMail'); if(cm) cm.href=cbMailHref(o,cbEmail());
   const db=$('doneBtn'); if(db) db.onclick=async()=>{ if(!confirm('Mark order '+o.order_number+' complete? It moves to the Completed folder and the customer sees “Completed”.')) return; try{
       await patch(id,{status:'completed',completed_at:new Date().toISOString(),completed_by:auth.email||null},'Status: Completed',true); toast('Moved to the Completed folder'); await refreshAll(); }catch(e){ toast(e.message); } };
