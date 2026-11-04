@@ -55,6 +55,7 @@ label.check input{margin-top:4px;width:18px;height:18px}
 #lb img{max-width:100%;max-height:100%;transition:none}
 #lb img.zoom{max-width:none;max-height:none;width:220%}
 @media(max-width:720px){.opts{grid-template-columns:1fr}.opt img{height:46vh}h1{font-size:22px}}
+.dtitle{font-family:"Bebas Neue",sans-serif;color:#870707;letter-spacing:.05em;font-size:26px;font-weight:400;margin:0 0 10px}
 </style></head><body>
 <header><div class="brand">Her Layers Unfold <b>×</b> CraftBully</div><small>Custom Canvas Studio</small></header>
 <main id="app"><div class="card"><p class="muted">Loading your order…</p></div></main>
@@ -67,7 +68,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STEPS=[['order_received','Order received'],['design_in_preparation','Design in preparation'],['ready_for_review','Ready for review'],['revision_in_progress','Revision in progress'],['design_approved','Design approved'],['preparing_for_production','Preparing for production'],['in_production','In production'],['completed','Completed']];
 const LABEL=Object.fromEntries(STEPS);
-let TOKEN=null, ORDER=null, busy=false, lbWhich=0;
+let TOKEN=null, ORDER=null, busy=false, lbWhich=0, lbDesign=0;
 
 function getToken(){
   const h=(location.hash||'').replace(/^#/,'');
@@ -84,29 +85,48 @@ const previewUrl=p=>p?SB_URL+'/storage/v1/object/public/hlu-previews/'+p.split('
 const fmt=d=>{ try{ return new Date(d).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}); }catch(e){ return ''; } };
 
 function tracker(o){
-  const showRev=o.revisions_used>0||o.status==='revision_in_progress';
+  const showRev=(o.designs||[]).some(d=>d.revisions_used>0)||o.status==='revision_in_progress';
   const list=STEPS.filter(s=>s[0]!=='revision_in_progress'||showRev);
   const idx=list.findIndex(s=>s[0]===o.status);
   return '<ol class="steps">'+list.map((s,i)=>'<li class="'+(i<idx?'done':i===idx?'now':'')+'">'+(i<idx?'✓ ':'')+esc(s[1])+'</li>').join('')+'</ol>';
 }
-function metaHtml(o,n){
-  const m=((o.preview_meta||{})[n?'b':'a'])||{}; const rows=[];
+function metaHtml(d,n){
+  const m=((d.preview_meta||{})[n?'b':'a'])||{}; const rows=[];
   if(m.w||m.h) rows.push(['Canvas size',(m.w||'?')+' × '+(m.h||'?')+' '+(m.unit||'in')]);
   if(m.drills) rows.push(['Drill count',m.drills]);
   if(m.colors) rows.push(['Colors',m.colors]);
   if(!rows.length&&!m.notes) return '';
   return '<dl class="meta">'+rows.map(r=>'<div><dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd></div>').join('')+'</dl>'+(m.notes?'<p class="mnote"><b>Notes:</b> '+esc(m.notes)+'</p>':'');
 }
-function optCard(o,n){
-  const url=previewUrl(n?o.preview_b:o.preview_a);
-  const open=o.status==='ready_for_review'&&!o.approved_at;
-  const chosen=o.selected_option===n;
+function optCard(d,i,n,open){
+  const url=previewUrl(n?d.preview_b:d.preview_a);
+  const chosen=d.selected_option===n;
   return '<div class="opt'+(chosen?' chosen':'')+'"><h3>Option '+(n?'B · Enhanced conversion':'A · Original conversion')+'</h3>'
-   +(url?'<img src="'+esc(url)+'" alt="Option '+(n?'B':'A')+'" data-open="'+n+'">':'<div class="empty">Preview not available</div>')
-   +metaHtml(o,n)
+   +(url?'<img src="'+esc(url)+'" alt="Option '+(n?'B':'A')+'" data-open="'+i+':'+n+'">':'<div class="empty">Preview not available</div>')
+   +metaHtml(d,n)
    +'<p class="muted">'+(n?'The same image, adjusted for clarity and diamond art: brightness, contrast, and some tiny details simplified.':'Your uploaded image converted to your canvas size, with no enhancements.')+'</p>'
-   +(open?'<button data-pick="'+n+'" class="'+(chosen?'':'outline')+'" '+(url?'':'disabled')+'>'+(chosen?'✓ Selected':'Select this version')+'</button>':'')
+   +(open?'<button data-pick="'+i+':'+n+'" class="'+(chosen?'':'outline')+'" '+(url?'':'disabled')+'>'+(chosen?'✓ Selected':'Select this version')+'</button>':'')
    +'</div>';
+}
+function designBlock(o,d,i,multi){
+  const title=multi?'<h2 class="dtitle">'+esc(d.name)+(d.size&&d.size!==o.size?' <span class="muted" style="font-weight:400;font-size:14px">· '+esc(d.size)+'</span>':'')+'</h2>':'';
+  const left=Math.max(0,2-d.revisions_used);
+  if(d.approved_at){
+    const url=previewUrl(d.approved_option?d.preview_b:d.preview_a);
+    return '<div class="card dblock">'+title+'<div class="note ok"><b>'+(multi?esc(d.name)+' is approved':'Your design is approved')+'</b> on '+esc(fmt(d.approved_at))+' (Option '+(d.approved_option?'B · Enhanced':'A · Original')+'). It is now locked and heading to production. Thank you!</div>'
+      +(url?'<div style="margin-top:14px;max-width:560px"><img src="'+esc(url)+'" alt="Approved design" style="width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in" data-open="'+i+':'+(d.approved_option?1:0)+'"></div>':'')+'</div>';
+  }
+  if(o.status==='ready_for_review'){
+    if(!(d.preview_a&&d.preview_b)) return '<div class="card dblock">'+title+'<div class="note">The previews for this design aren’t ready yet. We’ll let you know.</div></div>';
+    return '<div class="card dblock">'+title+'<p>'+(multi?'Compare these two versions of <b>'+esc(d.name)+'</b>':'These are two versions of <b>the same image</b> you uploaded')+', shown as the real diamond art pattern. Tap a picture to zoom in, choose the one you like, then approve it or ask for an adjustment.</p>'
+      +'<div class="opts">'+optCard(d,i,0,true)+optCard(d,i,1,true)+'</div>'
+      +'<h3 style="margin-top:16px">Approve '+(multi?esc(d.name):'your design')+'</h3>'
+      +(d.selected_option===null?'<p class="muted">Select Option A or B above to continue.</p>':'<p>You selected <b>Option '+(d.selected_option?'B · Enhanced':'A · Original')+'</b>.</p><label class="check"><input type="checkbox" id="agree'+i+'" data-agree="'+i+'"> <span>I approve this design. I understand it will be locked and sent to production, and that I can’t change it afterward.</span></label><div style="margin-top:12px"><button id="approve'+i+'" data-approve="'+i+'" disabled>Approve '+(multi?esc(d.name):'design')+'</button></div>')
+      +'<h3 style="margin-top:16px">Need an adjustment'+(multi?' to '+esc(d.name):'')+'?</h3>'
+      +(left>0?'<p>You have <b>'+left+' of 2</b> revision round'+(left===1?'':'s')+' remaining'+(multi?' for this design':'')+'. Revisions adjust <b>this same image</b>. Replacing it with a different image isn’t included.</p><textarea id="revText'+i+'" maxlength="2000" placeholder="Tell us what to change, e.g. “brighten her face”, “remove the small text in the corner”."></textarea><div style="margin-top:10px"><button class="secondary" id="revBtn'+i+'" data-rev="'+i+'">Send revision request ('+(d.revisions_used+1)+' of 2)</button></div>':'<div class="note">No revision rounds remain for this design. Please approve one of the two versions above.</div>')
+      +'</div>';
+  }
+  return '<div class="card dblock">'+title+'<p class="muted" style="margin:0">Waiting for updated previews.</p></div>';
 }
 function eventsHtml(o){
   const ev=(o.events||[]).slice().reverse();
@@ -116,41 +136,27 @@ function eventsHtml(o){
 function render(msg){
   const o=ORDER, app=$('app');
   if(!o){ return; }
-  const left=Math.max(0,2-o.revisions_used);
-  let body='';
-  if(o.approved_at){
-    const url=previewUrl(o.approved_option?o.preview_b:o.preview_a);
-    body='<div class="card"><div class="note ok"><b>Your design is approved</b> on '+esc(fmt(o.approved_at))+' (Option '+(o.approved_option?'B · Enhanced':'A · Original')+'). It is now locked and heading to production. Thank you!</div>'
-      +(url?'<div style="margin-top:14px;max-width:560px"><img src="'+esc(url)+'" alt="Approved design" style="width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in" data-open="'+(o.approved_option?1:0)+'"></div>':'')+'</div>';
-  } else if(o.status==='ready_for_review'){
-    body='<div class="card"><h2>Choose your favorite</h2><p>These are two versions of <b>the same image</b> you uploaded, shown as the real diamond art pattern. Tap a picture to zoom in, choose the one you like, then approve it or ask for an adjustment.</p>'
-      +'<div class="opts">'+optCard(o,0)+optCard(o,1)+'</div></div>'
-      +'<div class="card"><h2>Approve your design</h2>'
-      +(o.selected_option===null?'<p class="muted">Select Option A or B above to continue.</p>':'<p>You selected <b>Option '+(o.selected_option?'B · Enhanced':'A · Original')+'</b>.</p><label class="check"><input type="checkbox" id="agree"> <span>I approve this design. I understand it will be locked and sent to production, and that I can’t change it afterward.</span></label><div style="margin-top:12px"><button id="approveBtn" disabled>Approve design</button></div>')
-      +'</div>'
-      +'<div class="card"><h2>Need an adjustment?</h2>'
-      +(left>0?'<p>You have <b>'+left+' of 2</b> revision round'+(left===1?'':'s')+' remaining. Revisions adjust <b>this same image</b>. Replacing it with a different image isn’t included.</p><textarea id="revText" maxlength="2000" placeholder="Tell us what to change, e.g. “brighten her face”, “remove the small text in the corner”."></textarea><div style="margin-top:10px"><button class="secondary" id="revBtn">Send revision request ('+(o.revisions_used+1)+' of 2)</button></div>':'<div class="note">No revision rounds remain. Please approve one of the two versions above.</div>')
-      +'</div>';
-  } else if(o.status==='revision_in_progress'){
-    body='<div class="card"><div class="note">We received your adjustment request and are working on it. You’ll get a message when your updated previews are ready. Revision rounds remaining: <b>'+left+' of 2</b>.</div></div>';
-  } else if(o.status==='order_received'||o.status==='design_in_preparation'){
-    body='<div class="card"><div class="note">Your order is in. We’re preparing two versions of your image as diamond art. You’ll get a message when they’re ready to review.</div></div>';
-  } else {
-    body='<div class="card"><div class="note ok">Your design is approved. Current status: <b>'+esc(LABEL[o.status]||o.status)+'</b>.</div></div>';
-  }
-  app.innerHTML='<div class="card"><div class="flex" style="justify-content:space-between"><div><h1>Order '+esc(o.order_number)+'</h1><div class="muted">'+(o.customer_name?esc(o.customer_name)+' · ':'')+esc(o.size||'')+(o.drill_shape?' · '+esc(o.drill_shape)+' drills':'')+'</div></div><span class="pill">'+esc(LABEL[o.status]||o.status)+'</span></div>'+tracker(o)
+  const ds=o.designs||[], multi=ds.length>1, nA=ds.filter(d=>d.approved_at).length;
+  let top='';
+  if(o.status==='revision_in_progress') top='<div class="card"><div class="note">We received your adjustment request and are working on it. You’ll get a message when your updated previews are ready'+(multi&&nA?' (designs you already approved stay approved)':'')+'.</div></div>';
+  else if(o.status==='order_received'||o.status==='design_in_preparation') top='<div class="card"><div class="note">Your order is in. We’re preparing two versions of '+(multi?'each of your designs':'your image')+' as diamond art. You’ll get a message when they’re ready to review.</div></div>';
+  else if(o.status==='ready_for_review'&&multi) top='<div class="card"><div class="note">Your order has <b>'+ds.length+' designs</b>. For each one, choose Option A or B and approve it. <b>'+nA+' of '+ds.length+' approved.</b></div></div>';
+  else if(!['ready_for_review'].includes(o.status)&&o.approved_at) top='<div class="card"><div class="note ok">'+(multi?'All '+ds.length+' designs are approved':'Your design is approved')+'. Current status: <b>'+esc(LABEL[o.status]||o.status)+'</b>.</div></div>';
+  const body=ds.map((d,i)=>designBlock(o,d,i,multi)).join('');
+  app.innerHTML='<div class="card"><div class="flex" style="justify-content:space-between"><div><h1>Order '+esc(o.order_number)+'</h1><div class="muted">'+(o.customer_name?esc(o.customer_name)+' · ':'')+esc(o.size||'')+(o.drill_shape?' · '+esc(o.drill_shape)+' drills':'')+(multi?' · '+ds.length+' designs':'')+'</div></div><span class="pill">'+esc(LABEL[o.status]||o.status)+'</span></div>'+tracker(o)
     +'<div style="margin-top:8px"><button class="secondary" id="refreshBtn" style="padding:8px 12px;font-size:13px">↻ Refresh</button></div></div>'
     +(msg?'<div class="note '+(msg.err?'err':'ok')+'" style="margin-bottom:16px">'+esc(msg.text)+'</div>':'')
-    +body+eventsHtml(o);
+    +top+body+eventsHtml(o);
   bind();
 }
 function bind(){
   $('refreshBtn')&&($('refreshBtn').onclick=()=>load());
-  document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openLb(+el.dataset.open));
-  document.querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>act(()=>rpc('hlu_select_option',{p_token:TOKEN,p_opt:+el.dataset.pick})));
-  const ag=$('agree'), ap=$('approveBtn');
-  if(ag&&ap){ ag.onchange=()=>{ ap.disabled=!ag.checked; }; ap.onclick=()=>{ if(!ag.checked) return; if(confirm('Approve this design? It will be locked for production.')) act(async()=>{ const r=await rpc('hlu_approve',{p_token:TOKEN}); try{ fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({mode:'approved',token:TOKEN,app_url:location.href.split('#')[0].split('?')[0]}),keepalive:true}).catch(()=>{}); }catch(e){} return r; },'Thank you! Your design is approved.'); }; }
-  const rb=$('revBtn'); if(rb) rb.onclick=()=>{ const t=($('revText').value||'').trim(); if(t.length<8){ alert('Please describe the change in at least 8 characters.'); return; } act(()=>rpc('hlu_request_revision',{p_token:TOKEN,p_text:t}),'Your revision request was sent. We’ll be in touch when your updated previews are ready.'); };
+  document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>{ const [di,n]=el.dataset.open.split(':'); openLb(+di,+n); });
+  const did=i=>ORDER.designs[+i].id;
+  document.querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>{ const [i,n]=el.dataset.pick.split(':'); act(()=>rpc('hlu_select_option',{p_token:TOKEN,p_design:did(i),p_opt:+n})); });
+  document.querySelectorAll('[data-agree]').forEach(ag=>{ const i=ag.dataset.agree, ap=$('approve'+i); ag.onchange=()=>{ ap.disabled=!ag.checked; };
+    ap.onclick=()=>{ if(!ag.checked) return; const d=ORDER.designs[+i]; if(confirm('Approve '+(ORDER.designs.length>1?d.name:'this design')+'? It will be locked for production.')) act(async()=>{ const r=await rpc('hlu_approve',{p_token:TOKEN,p_design:d.id}); try{ fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({mode:'approved',token:TOKEN,app_url:location.href.split('#')[0].split('?')[0]}),keepalive:true}).catch(()=>{}); }catch(e){} return r; },(ORDER.designs.length>1?d.name+' is approved. Thank you!':'Thank you! Your design is approved.')); }; });
+  document.querySelectorAll('[data-rev]').forEach(rb=>rb.onclick=()=>{ const i=rb.dataset.rev, t=($('revText'+i).value||'').trim(); if(t.length<8){ alert('Please describe the change in at least 8 characters.'); return; } act(()=>rpc('hlu_request_revision',{p_token:TOKEN,p_design:did(i),p_text:t}),'Your revision request was sent. We’ll be in touch when your updated previews are ready.'); });
 }
 async function act(fn,okText){
   if(busy) return; busy=true;
@@ -166,15 +172,15 @@ async function load(){
     ORDER=o; render();
   }catch(e){ $('app').innerHTML='<div class="card"><div class="note err">We couldn’t load your order right now. Please refresh in a moment.</div></div>'; }
 }
-function openLb(n){
-  const o=ORDER; if(!o) return; lbWhich=n;
-  const url=previewUrl(n?o.preview_b:o.preview_a); if(!url) return;
+function openLb(di,n){
+  const o=ORDER; if(!o) return; const d=(o.designs||[])[di]; if(!d) return; lbWhich=n; lbDesign=di;
+  const url=previewUrl(n?d.preview_b:d.preview_a); if(!url) return;
   $('lbImg').src=url; $('lbImg').classList.remove('zoom'); $('lb').classList.add('on');
-  const both=!o.approved_at; $('lbA').style.display=$('lbB').style.display=both?'':'none';
+  const both=!d.approved_at; $('lbA').style.display=$('lbB').style.display=both?'':'none';
 }
 $('lbX').onclick=()=>$('lb').classList.remove('on');
 $('lbZ').onclick=()=>$('lbImg').classList.toggle('zoom');
-$('lbA').onclick=()=>openLb(0); $('lbB').onclick=()=>openLb(1);
+$('lbA').onclick=()=>openLb(lbDesign,0); $('lbB').onclick=()=>openLb(lbDesign,1);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('lb').classList.remove('on'); });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&TOKEN&&!busy) load(); });
 
