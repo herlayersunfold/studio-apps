@@ -270,7 +270,7 @@ function drawDetail(){
   $('detail').innerHTML=
    '<div class="card"><div class="flex between"><h2 style="margin:0">'+esc(o.order_number)+' · '+esc(o.customer_name||'')+'</h2><span class="tag '+(actionOf(o)?'act':(o.status==='completed'?'done':''))+'">'+esc(LABEL[o.status])+'</span></div>'
    +'<p class="muted small">'+esc(o.size||'')+' · '+esc(o.drill_shape||'')+' drills · created '+esc(fmt(o.created_at))+' · <b>'+nAppr+' of '+designs.length+' design'+(designs.length===1?'':'s')+' approved</b></p>'
-   +'<h3>Customer link</h3><div class="linkbox">'+esc(link)+'</div><div class="flex" style="margin-top:8px"><button id="cpLink">Copy link</button><a class="btn secondary" id="mailLink">Email draft</a></div>'
+   +'<h3>Customer link</h3><div class="linkbox">'+esc(link)+'</div><div class="flex" style="margin-top:8px"><button id="cpLink">Copy link</button><button id="sendCust">✉ Send to customer</button><a class="btn secondary" id="mailLink">Email draft</a></div><p class="small muted" style="margin:6px 0 0">“Send to customer” emails them their link automatically'+(o.customer_email?' (to '+esc(o.customer_email)+')':' once you add their email below')+'. “Email draft” opens your own mail app instead.</p>'
    +'<h3>Status</h3><div class="flex"><select id="stSel" style="max-width:280px">'+STATUSES.map(s=>'<option value="'+s[0]+'" '+(s[0]===o.status?'selected':'')+'>'+esc(s[1])+'</option>').join('')+'</select><button class="secondary" id="stBtn">Update status</button></div><p class="small muted">The customer sees every status change. Moving back to “Ready for review” re-opens review for every design.</p></div>'
    +'<div class="card"><h2>Customer & order details</h2><div class="grid2"><div class="field"><label>Name</label><input id="dName" value="'+esc(o.customer_name||'')+'"></div><div class="field"><label>Email</label><input id="dEmail" type="email" value="'+esc(o.customer_email||'')+'"></div><div class="field"><label>Canvas size (default for new designs)</label><select id="dSize">'+sizeOptions(o.size)+'</select></div><div class="field"><label>Drill shape</label><select id="dShape"><option '+(o.drill_shape==='Round'?'selected':'')+'>Round</option><option '+(o.drill_shape==='Square'?'selected':'')+'>Square</option></select></div><div class="field"><label>Shopify order ID (later)</label><input id="dShop" value="'+esc(o.shopify_order_id||'')+'"></div></div><div class="field"><label>Internal notes (customers never see these)</label><textarea id="dNotes">'+esc(o.staff_notes||'')+'</textarea></div><button class="secondary" id="dSave">Save details</button></div>'
    +'<div class="card"><div class="flex between"><h2 style="margin:0">Designs ('+designs.length+')</h2><button id="addDesign">+ Add design</button></div><p class="muted small" style="margin-bottom:0">Each design has its own previews (Option A and B), its own customer approval and its own production files. Add as many as this order needs.</p></div>'
@@ -408,6 +408,16 @@ function wireDetail(){
   $('cpLink').onclick=async()=>{ try{ await navigator.clipboard.writeText(customerLink(o)); toast('Link copied'); }catch(e){ prompt('Copy this link:',customerLink(o)); } };
   const first=(o.customer_name||'there').split(' ')[0];
   $('mailLink').href='mailto:'+encodeURIComponent(o.customer_email||'')+'?subject='+encodeURIComponent('Your custom canvas is ready to review (Order '+o.order_number+')')+'&body='+encodeURIComponent('Hi '+first+',\n\nYour custom diamond art canvas previews are ready. Please open your private link to compare the two versions of '+(designs.length>1?'each of your '+designs.length+' designs':'your design')+', then approve one or request an adjustment:\n\n'+customerLink(o)+'\n\nThank you!\nHer Layers Unfold × CraftBully');
+  $('sendCust').onclick=async()=>{
+    if(!o.customer_email){ toast('Add the customer’s email under Customer & order details first.'); return; }
+    if(o.status!=='ready_for_review'&&!confirm('This order isn’t published for review yet, so the customer may see “waiting” messages. Send the link anyway?')) return;
+    if(!confirm('Email the review link to '+o.customer_email+'?')) return;
+    const bt=$('sendCust'); bt.disabled=true; toast('Sending…');
+    try{ const tk=await getToken(); const r=await fetch(SB_URL+'/functions/v1/hlu-notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+tk},body:JSON.stringify({mode:'review',order_id:o.id,app_url:customerLink(o)})});
+      let j={}; try{ j=await r.json(); }catch(e){}
+      if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+      toast('Sent to '+o.customer_email+' ✓'); await refreshAll();
+    }catch(e){ toast('Email problem: '+e.message); bt.disabled=false; } };
   $('stBtn').onclick=async()=>{ const v=$('stSel').value; if(v===o.status) return; try{
       const f={status:v}; let ev='Status: '+LABEL[v];
       if(v==='ready_for_review'){
