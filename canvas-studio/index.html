@@ -1052,6 +1052,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         </select>
       </div>
       <datalist id="projectClientList"></datalist>
+      <label style="display:flex;gap:0.4rem;align-items:flex-start;font-size:0.65rem;color:var(--muted);margin:0.45rem 0 0;cursor:pointer"><input type="checkbox" id="shopPrefixOn" checked style="margin-top:0.1rem"> <span>Use the client name as a prefix on the shopping list (ex: client <b>GHCC2</b> gives “GHCC2 - Pattern name Shopping List.txt”). Turn off for regular canvases.</span></label>
       <div class="small-note" id="autoSaveStatus" style="display:none;color:var(--red)"></div>
     </div>
   </div>
@@ -9731,6 +9732,33 @@ canvasArea.addEventListener('scroll',()=>{
   if(typeof syncPhotoZoomEnabled!=='undefined' && syncPhotoZoomEnabled) renderSyncedPhotoView();
 });
 
+// ── SHOPPING LIST PREFIX (client name) + DRILL SHAPE ─────────────────────────
+// When "Use client name as prefix" is on and a Client is entered (e.g. GHCC2), the shopping list title and
+// file name start with it: "GHCC2 - Pattern name". Spaces inside the client name are removed (GHCC 2 -> GHCC2).
+// A client of "Me" (or blank) gets no prefix. Turn the checkbox off to skip it (e.g. for regular canvases).
+const SHOP_PREFIX_KEY='artStudioShopPrefixOn';
+function shoppingPrefix(){
+  try{
+    const cb=document.getElementById('shopPrefixOn'); if(cb && !cb.checked) return '';
+    const el=document.getElementById('projectClient'); const raw=el?String(el.value||''):'';
+    const p=raw.replace(/\s+/g,'').replace(/[\\/:*?"<>|]/g,'').slice(0,40);
+    return (!p || /^me$/i.test(p)) ? '' : p;
+  }catch(e){ return ''; }
+}
+function withShoppingPrefix(title){
+  const p=shoppingPrefix(); const t=String(title||'').trim();
+  if(!p) return t;
+  return t.toLowerCase().startsWith(p.toLowerCase()) ? t : p+' - '+t;
+}
+function drillShapeLine(){
+  if(typeof appMode!=='undefined' && appMode==='rhinestone') return `Drill shape: Rhinestone (${sizeLabelFor(drillMM)})`;
+  return `Drill shape: ${drillMM===2.8?'Round':'Square'}`;
+}
+(function(){ const cb=document.getElementById('shopPrefixOn'); if(!cb) return;
+  try{ const v=localStorage.getItem(SHOP_PREFIX_KEY); if(v!==null) cb.checked=(v==='1'); }catch(e){}
+  cb.addEventListener('change',()=>{ try{ localStorage.setItem(SHOP_PREFIX_KEY,cb.checked?'1':'0'); }catch(e){} });
+})();
+
 // ── MASTER SHOPPING LIST (multi-design counter) ──────────────────────────────
 // Lets several separately-generated designs each contribute their color
 // counts into ONE running total, without merging the designs themselves —
@@ -9740,10 +9768,11 @@ canvasArea.addEventListener('scroll',()=>{
 const MASTER_COUNTER_STORAGE_KEY='artStudioMasterCounter';
 let masterCounter={}; // key: `${mode}:${code}` -> {mode,code,name,hex,count}
 let masterDesignCount=0;
+let masterShapes={}; // drill shapes used across the added designs
 
 function saveMasterCounterToStorage(){
   try{
-    localStorage.setItem(MASTER_COUNTER_STORAGE_KEY, JSON.stringify({masterCounter,masterDesignCount}));
+    localStorage.setItem(MASTER_COUNTER_STORAGE_KEY, JSON.stringify({masterCounter,masterDesignCount,masterShapes}));
   }catch(e){ /* storage unavailable — counter still works for this session */ }
 }
 
@@ -9755,6 +9784,7 @@ function loadMasterCounterFromStorage(){
     if(parsed && typeof parsed.masterCounter==='object'){
       masterCounter=parsed.masterCounter;
       masterDesignCount=parsed.masterDesignCount||0;
+      masterShapes=(parsed.masterShapes&&typeof parsed.masterShapes==='object')?parsed.masterShapes:{};
     }
   }catch(e){ /* ignore corrupt/unavailable storage */ }
 }
@@ -9817,6 +9847,7 @@ document.getElementById('addToCounterBtn').addEventListener('click',()=>{
   });
   if(!addedAnyColor){ alert('This design has no visible colors to add (everything is hidden/turned off).'); return; }
   masterDesignCount++;
+  masterShapes[(typeof appMode!=='undefined'&&appMode==='rhinestone')?('Rhinestone '+sizeLabelFor(drillMM)):(drillMM===2.8?'Round':'Square')]=1;
   saveMasterCounterToStorage();
   renderMasterCounterList();
 });
@@ -9826,6 +9857,7 @@ document.getElementById('clearMasterCounterBtn').addEventListener('click',()=>{
   if(!confirm(`Clear the running counter? This removes the combined totals from all ${masterDesignCount} design${masterDesignCount===1?'':'s'} added so far. Your individual generated patterns are not affected — only the combined shopping-list totals reset.`)) return;
   masterCounter={};
   masterDesignCount=0;
+  masterShapes={};
   saveMasterCounterToStorage();
   renderMasterCounterList();
 });
@@ -9839,11 +9871,14 @@ document.getElementById('exportMasterCounterBtn').addEventListener('click',()=>{
   });
   if(!entries.length) return;
   const totalDrills=entries.reduce((s,e)=>s+e.count,0);
-  const title=prompt('Enter a name for this combined shopping list:', `Combined Order (${masterDesignCount} designs)`) || `Combined Order (${masterDesignCount} designs)`;
+  const title=withShoppingPrefix(prompt('Enter a name for this combined shopping list:', `Combined Order (${masterDesignCount} designs)`) || `Combined Order (${masterDesignCount} designs)`);
+  const shapeKeys=Object.keys(masterShapes||{});
+  const shapeText=shapeKeys.length?(shapeKeys.length===1?shapeKeys[0]:shapeKeys.join(' + ')+' (mixed)'):'';
   const lines=[
     title,
     '-'.repeat(title.length),
     `Designs combined: ${masterDesignCount}`,
+    ...(shapeText?[`Drill shape: ${shapeText}`]:[]),
     `Colors: ${entries.length}`,
     `Total drills: ${totalDrills.toLocaleString()}`,
     '-'.repeat(20),
@@ -9880,12 +9915,13 @@ exportTxtBtn.addEventListener('click',()=>{
   );
 
   const drillType=sizeLabelFor(drillMM);
-  const title=prompt('Enter pattern name for shopping list:', `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`) || `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`;
+  const title=withShoppingPrefix(prompt('Enter pattern name for shopping list:', `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`) || `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`);
 
   const lines=[
     title,
     '-'.repeat(title.length),
     `Pattern size: ${gridW} x ${gridH}`,
+    drillShapeLine(),
     `Drill type: ${drillType} (${drillMM} mm)`,
     `Finished size: ${Number(wIn).toFixed(1)} x ${Number(hIn).toFixed(1)}" (${wCm} x ${hCm} cm)`,
     `Total drills: ${total.toLocaleString()}`,
