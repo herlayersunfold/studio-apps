@@ -7460,11 +7460,12 @@ document.getElementById('exportMasterCounterBtn').addEventListener('click',()=>{
   });
   if(!entries.length) return;
   const totalDrills=entries.reduce((s,e)=>s+e.count,0);
-  const title=withShoppingPrefix(prompt('Enter a name for this combined shopping list:', `Combined Order (${masterDesignCount} designs)`) || `Combined Order (${masterDesignCount} designs)`);
+  const title=prompt('Enter a name for this combined shopping list:', `Combined Order (${masterDesignCount} designs)`) || `Combined Order (${masterDesignCount} designs)`;
   const shapeKeys=Object.keys(masterShapes||{});
   const shapeText=shapeKeys.length?(shapeKeys.length===1?shapeKeys[0]:shapeKeys.join(' + ')+' (mixed)'):'';
   const lines=[
     title,
+    ...(shoppingPrefix()?[shoppingPrefix()]:[]),
     '-'.repeat(title.length),
     `Designs combined: ${masterDesignCount}`,
     ...(shapeText?[`Drill shape: ${shapeText}`]:[]),
@@ -7477,7 +7478,7 @@ document.getElementById('exportMasterCounterBtn').addEventListener('click',()=>{
       return dispCode(e,1).padEnd(10)+e.name.padEnd(32)+e.count.toLocaleString();
     })
   ];
-  const safeTitle=title.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim().slice(0,80) || 'Combined Order';
+  const safeTitle=withShoppingPrefix(title).replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim().slice(0,80) || 'Combined Order';
   const blob=new Blob([lines.join('\n')],{type:'text/plain'});
   offerDownload(`${safeTitle} Combined Shopping List.txt`,blob);
 });
@@ -7501,10 +7502,11 @@ exportTxtBtn.addEventListener('click',()=>{
   );
 
   const drillType=sizeLabelFor(drillMM);
-  const title=withShoppingPrefix(prompt('Enter pattern name for shopping list:', `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`) || `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`);
+  const title=prompt('Enter pattern name for shopping list:', `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`) || `Diamond Art (${formatIn(wIn)}x${formatIn(hIn)})`;
 
   const lines=[
     title,
+    ...(shoppingPrefix()?[shoppingPrefix()]:[]),
     '-'.repeat(title.length),
     `Pattern size: ${gridW} x ${gridH}`,
     drillShapeLine(),
@@ -7521,7 +7523,7 @@ exportTxtBtn.addEventListener('click',()=>{
     })
   ];
 
-  const safeTitle=title
+  const safeTitle=withShoppingPrefix(title)
     .replace(/[\\/:*?"<>|]/g,'')
     .replace(/\s+/g,' ')
     .trim()
