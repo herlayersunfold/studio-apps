@@ -100,6 +100,10 @@ select:focus,input[type=number]:focus{border-color:var(--red)}
 .btn-sm{font-size:0.8rem;padding:0.4rem 0.7rem;width:auto;display:inline-block;border-radius:3px}
 .btns{display:flex;flex-direction:column;gap:0}
 .legend-list{display:flex;flex-direction:column;gap:0.35rem;max-height:420px;overflow-y:auto}
+.leg-sort-row{display:flex;align-items:center;gap:0.4rem;margin:0 0 0.5rem;font-size:0.72rem;color:var(--muted)}
+.leg-sort-btn{font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:500;padding:0.25rem 0.6rem;border-radius:4px;border:1.5px solid var(--border-strong);background:#fff;color:var(--muted);cursor:pointer}
+.leg-sort-btn.active{background:var(--red);border-color:var(--red);color:#fff}
+.leg-family-head{font-size:0.66rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--red);padding:0.45rem 0 0.15rem;border-bottom:1.5px solid var(--red)}
 .leg-item{display:grid;grid-template-columns:22px 34px minmax(0,1fr) 72px;align-items:center;gap:0.55rem;font-size:0.8rem;padding:0.28rem 0;border-bottom:1px solid rgba(0,0,0,0.05)}
 .leg-swatch{width:32px;height:32px;border:1.5px solid rgba(0,0,0,0.2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;cursor:pointer;flex-shrink:0;position:relative;transition:transform 0.1s}
 .leg-swatch:hover{transform:scale(1.15);border-color:var(--red)}
@@ -1196,6 +1200,11 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
       <div class="cep-note">Color is snapped to the nearest palette color. Changes update the canvas in real time.</div>
     </div>
 
+    <div class="leg-sort-row">
+      <span>Sort by</span>
+      <button type="button" class="leg-sort-btn active" id="legSortNumber" title="Number order (same as symbol order)">Number / Symbol</button>
+      <button type="button" class="leg-sort-btn" id="legSortFamily" title="Group colors by color family, lightest to darkest">Color Family</button>
+    </div>
     <div class="legend-list" id="legendList"></div>
   </div>
 
@@ -4848,6 +4857,41 @@ async function runMagicGenerate(){
 
 document.getElementById('magicGenerateBtn').addEventListener('click',runMagicGenerate);
 
+// ── LEGEND SORT (in-app view only, always starts in number order) ─────────
+let legendSortMode='number';
+const LEGEND_FAMILIES=['Reds','Pinks','Oranges','Yellows','Greens','Blues','Purples','Browns & Tans','Whites, Grays & Blacks'];
+function legendColorFamily(rgb){
+  const r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,l=(mx+mn)/2;
+  const s=d===0?0:d/(1-Math.abs(2*l-1));
+  let h=0;
+  if(d!==0){
+    if(mx===r) h=60*(((g-b)/d)%6); else if(mx===g) h=60*((b-r)/d+2); else h=60*((r-g)/d+4);
+    if(h<0) h+=360;
+  }
+  let name;
+  const sv=mx===0?0:d/mx, v=mx;
+  if(s<0.12 || l>0.94 || l<0.08) name='Whites, Grays & Blacks';
+  else if(h>=8 && h<50 && (v<0.45 || sv<0.45)) name='Browns & Tans';
+  else if(h>=255 && h<315) name='Purples';
+  else if(h>=315 && h<340) name='Pinks';
+  else if(h>=340 || h<12) name=l>0.72?'Pinks':'Reds';
+  else if(h<40) name='Oranges';
+  else if(h<70) name='Yellows';
+  else if(h<165) name='Greens';
+  else if(h<255) name='Blues';
+  else name='Purples';
+  return {name,order:LEGEND_FAMILIES.indexOf(name)};
+}
+function setLegendSort(mode){
+  legendSortMode=mode;
+  document.getElementById('legSortNumber').classList.toggle('active',mode==='number');
+  document.getElementById('legSortFamily').classList.toggle('active',mode==='family');
+  buildLegend(getCurrentCounts(),{dedupe:false});
+}
+document.getElementById('legSortNumber').addEventListener('click',()=>setLegendSort('number'));
+document.getElementById('legSortFamily').addEventListener('click',()=>setLegendSort('family'));
+
 // ── LEGEND ─────────────────────────────────────────────────────────────────
 function buildLegend(counts,opts){
   const allowDedupe=!(opts&&opts.dedupe===false);
@@ -4873,9 +4917,24 @@ function buildLegend(counts,opts){
   const visibleCount=visibleIndices.length;
   document.getElementById('colorCount').textContent=visibleCount;
   const symSet=document.getElementById('symSet').value;
-  const sorted=visibleIndices.slice().sort((a,b)=>symbolRank[a]-symbolRank[b]);
+  let sorted=visibleIndices.slice().sort((a,b)=>symbolRank[a]-symbolRank[b]);
+  // In-app view only: Color Family just changes the order of this list.
+  // Symbols, PDF key and shopping list are untouched.
+  const famOf={};
+  if(legendSortMode==='family'){
+    sorted.forEach(i=>{ famOf[i]=legendColorFamily(palette[i]); });
+    sorted.sort((a,b)=>(famOf[a].order-famOf[b].order)||(luminance(...palette[b])-luminance(...palette[a]))||(symbolRank[a]-symbolRank[b]));
+  }
+  let lastFam=null;
 
   sorted.forEach(i=>{
+    if(legendSortMode==='family' && famOf[i].name!==lastFam){
+      lastFam=famOf[i].name;
+      const head=document.createElement('div');
+      head.className='leg-family-head';
+      head.textContent=lastFam;
+      legendList.appendChild(head);
+    }
     const [R,G,B]=palette[i];
     const hex=rgbToHex(R,G,B);
     const lum=luminance(R,G,B);
