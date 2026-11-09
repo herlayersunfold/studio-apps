@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-10-31e</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-09a</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -1083,6 +1083,13 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
         <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="syncAuto" checked> Sync automatically</label>
       </div>
       <div class="small-note" id="syncStatus" style="margin:0.4rem 0 0"></div>
+    </div>
+    <div id="plBox" style="border:1px solid var(--border,#ddd);border-radius:6px;padding:0.6rem;margin:0 0 0.8rem">
+      <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">🔗 Production Line (optional)</div>
+      <div class="small-note" style="margin:0 0 0.4rem">Sends each PDF and shopping list you export to the Production Line. A small window opens; sign in there with your PIN, and keep it open while you work.</div>
+      <button class="btn btn-out" id="plLinkBtn" style="margin-top:0;width:100%">🔗 Link to Production Line</button>
+      <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="plAuto" checked> Send exports automatically while linked</label>
+      <div class="small-note" id="plStatus" style="margin:0.4rem 0 0">Not linked.</div>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -8321,7 +8328,9 @@ exportPdfBtn.addEventListener('click',async()=>{
       pdf.text(`Count: ${count}`,nameX,y+0.335);
     });
 
-    pdf.save(`${fileNamePrefix()}${formatIn(wIn)}x${formatIn(hIn)}in-2.8mm-300dpi.pdf`);
+    const pdfFileName=`${fileNamePrefix()}${formatIn(wIn)}x${formatIn(hIn)}in-2.8mm-300dpi.pdf`;
+    pdf.save(pdfFileName);
+    plSendPdf(pdfFileName,pdf); // also goes to the Production Line when linked
   } catch(err){
     alert('PDF export failed. Try a smaller canvas size or fewer colors.\n\n'+err.message);
   }
@@ -10007,7 +10016,62 @@ exportTxtBtn.addEventListener('click',()=>{
   a.href=URL.createObjectURL(blob);
   a.download=`${safeTitle} Shopping List.txt`;
   a.click();
+  plSendShoppingList(`${safeTitle} Shopping List`,lines.join('\n')); // also goes to the Production Line when linked
 });
+
+// ── PRODUCTION LINE LINK ───────────────────────────────────────────────────
+// Opens the Production Line's "Studio Link" window and, while it stays open, sends each exported PDF and
+// shopping list to it (window.postMessage). Nothing is sent unless that window is open and linked; the
+// files are always saved on this computer first, exactly as before.
+const PL_URL='https://craft-bully-inventory.craftbully.workers.dev/studio-link.html';
+const PL_ORIGIN=new URL(PL_URL).origin;
+const plLinkBtn=document.getElementById('plLinkBtn')||document.createElement('button'); // never null: a missing piece must not stop the rest of the Studio
+const plStatusEl=document.getElementById('plStatus')||document.createElement('div');
+let plWin=null, plReady=false, plPingTimer=null, plSeq=0;
+const plPending=new Map();
+function plSetStatus(text,bad){ plStatusEl.textContent=text; plStatusEl.style.color=bad?'var(--red)':''; }
+function plLinked(){ return !!(plWin&&!plWin.closed&&plReady); }
+function plRefresh(){
+  if(plWin&&plWin.closed){ plWin=null; plReady=false; plSetStatus('Not linked (the Production Line window was closed).'); }
+  plLinkBtn.textContent=plLinked()?'🔗 Linked to Production Line':'🔗 Link to Production Line';
+}
+function plPing(){ try{ if(plWin&&!plWin.closed) plWin.postMessage({type:'cbStudioPing'},PL_ORIGIN); }catch(e){} }
+plLinkBtn.addEventListener('click',()=>{
+  if(plWin&&!plWin.closed){ plWin.focus(); plPing(); return; }
+  plWin=window.open(PL_URL,'cbStudioLink','width=560,height=680');
+  if(!plWin){ plSetStatus('The link window was blocked. Allow pop-ups for this page, then try again.',true); return; }
+  plReady=false; plSetStatus('Waiting for the Production Line window… sign in there with your PIN if it asks.');
+  clearInterval(plPingTimer); let tries=0;
+  plPingTimer=setInterval(()=>{ plRefresh(); if(plLinked()||!plWin||++tries>120){ clearInterval(plPingTimer); return; } plPing(); },1000);
+});
+window.addEventListener('message',e=>{
+  if(e.origin!==PL_ORIGIN||e.source!==plWin) return; // only the Production Line window is trusted
+  const d=e.data||{};
+  if(d.type==='cbStudioReady'){ plReady=true; plSetStatus('Linked. Exports are sent while that window stays open.'); plRefresh(); }
+  if(d.type==='cbStudioAck'){ const p=plPending.get(d.id); if(p){ plPending.delete(d.id); clearTimeout(p.t); p.resolve(d); } }
+});
+setInterval(plRefresh,2000);
+function plSend(payload){
+  return new Promise(resolve=>{
+    if(!plLinked()){ resolve({ok:false,message:'Not linked'}); return; }
+    const id='st'+Date.now().toString(36)+(++plSeq);
+    const t=setTimeout(()=>{ plPending.delete(id); resolve({ok:false,message:'No answer from the Production Line (is that window still open?)'}); },20000);
+    plPending.set(id,{resolve,t});
+    try{ plWin.postMessage(Object.assign({type:'cbStudioExport',id},payload),PL_ORIGIN); }
+    catch(e){ clearTimeout(t); plPending.delete(id); resolve({ok:false,message:e.message}); }
+  });
+}
+// Sending is strictly best-effort: any problem here is swallowed so exporting and saving in the Studio behave exactly as before.
+async function plAfterExport(label,payload){
+  try{
+    if(!plLinked()||!(document.getElementById('plAuto')||{checked:false}).checked) return;
+    plSetStatus('Sending '+label+'…');
+    const r=await plSend(payload);
+    plSetStatus(r.ok?(r.message||('Sent '+label+'.')):('Not sent: '+r.message+' (the file was still saved on this computer).'),!r.ok);
+  }catch(e){}
+}
+function plSendShoppingList(name,text){ try{ return plAfterExport('shopping list',{kind:'list',name,text}); }catch(e){} }
+function plSendPdf(name,pdf){ try{ if(!plLinked()) return; return plAfterExport('PDF',{kind:'pdf',name,blob:pdf.output('blob')}); }catch(e){} }
 
 // ── UNDO / REDO ────────────────────────────────────────────────────────────
 let undoStack=[];
