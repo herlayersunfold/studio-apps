@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-14b</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-14c</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -547,6 +547,25 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
       <div class="small-note" style="margin-bottom:0.4rem">Check the drill counts match your design. If the red lines on the preview don't sit between the dots, type the right numbers and press ↻.</div>
       <div id="importDesignColors" style="font-size:0.72rem;margin-bottom:0.45rem"></div>
       <button type="button" class="btn" id="importDesignBuildBtn">✓ Build pattern with letters</button>
+    </div>
+    <div id="wmBlock" style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px solid var(--border)">
+      <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);margin-bottom:0.3rem">My Watermark</div>
+      <div class="small-note" style="margin-bottom:0.4rem">Goes only on designs you bring in here with Import Finished Design — on Save Canvas PNG and the PDF. Patterns made from photos stay clean.</div>
+      <label style="display:flex;gap:0.4rem;align-items:center;font-size:0.75rem;margin-bottom:0.4rem"><input type="checkbox" id="wmOn"> Add my watermark</label>
+      <div style="display:flex;gap:0.4rem;align-items:center;margin-bottom:0.4rem">
+        <label class="btn btn-out btn-sm" style="cursor:pointer;margin:0">🖼 Upload logo PNG<input type="file" id="wmLogoInput" accept="image/*" style="display:none"></label>
+        <img id="wmLogoThumb" alt="" style="height:28px;max-width:90px;object-fit:contain;display:none;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/10px 10px;border:1px solid var(--border)">
+      </div>
+      <div id="wmControls" style="display:none">
+        <div style="display:flex;gap:0.4rem;align-items:center;font-size:0.72rem;margin-bottom:0.3rem"><span style="width:3.6rem">Opacity</span><input type="range" id="wmOpacity" min="5" max="100" value="35"><span id="wmOpacityVal" style="width:2.4rem;text-align:right">35%</span></div>
+        <div style="display:flex;gap:0.4rem;align-items:center;font-size:0.72rem;margin-bottom:0.4rem"><span style="width:3.6rem">Size</span><input type="range" id="wmSize" min="5" max="100" value="30"><span id="wmSizeVal" style="width:2.4rem;text-align:right">30%</span></div>
+        <canvas id="wmPreview" style="width:100%;border:1px solid var(--border-strong);border-radius:4px;display:block;touch-action:none;cursor:move;margin-bottom:0.3rem"></canvas>
+        <div class="small-note" style="margin-bottom:0.35rem">Drag a logo to move it. Click a logo to pick it (red box) — Size changes the picked one.</div>
+        <div style="display:flex;gap:0.4rem">
+          <button type="button" class="btn btn-out btn-sm" id="wmAddCopy" style="flex:1">⧉ Duplicate</button>
+          <button type="button" class="btn btn-out btn-sm" id="wmRemoveCopy" style="flex:1">✕ Remove this one</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4496,6 +4515,7 @@ function flatRemoveSpecks(maxSize,protect){
 
 function generate(){
   if(!sourceImage) return;
+  importedDesign=false; // a photo-made pattern never gets the watermark
   clearResizeNewPhoto();
   selectedCells.clear();
   hiddenColorCells={};
@@ -8587,7 +8607,7 @@ exportPdfBtn.addEventListener('click',async()=>{
     pdf.setLineWidth(0.005);
     pdf.rect(imageX,imageY,wIn,hIn);
 
-    const fontPt=Math.max(2.2, cellIn*72*0.58);
+    const fontPt=Math.max(2.2, cellIn*72*0.58*(getLetterScale()/0.6));
     pdf.setFont('helvetica','bold');
     pdf.setFontSize(fontPt);
 
@@ -8637,7 +8657,7 @@ exportPdfBtn.addEventListener('click',async()=>{
         const sym=getSymbol(symbolRank[pi],symSet);
         let dynamicPdfFont=fontPt;
         if(sym.length>1){
-          dynamicPdfFont=Math.max(2,dynamicPdfFont-0.5);
+          dynamicPdfFont=Math.max(2,Math.min(dynamicPdfFont,Math.max(2.2,cellIn*72*0.6))-0.5);
         }
 
         pdf.setFontSize(dynamicPdfFont);
@@ -8669,6 +8689,8 @@ exportPdfBtn.addEventListener('click',async()=>{
         pdf.setFontSize(fontPt);
       }
     }
+
+    addPdfWatermarks(pdf,startX,startY,gridW*cellIn,gridH*cellIn);
 
     const counts=getCurrentCounts();
 
@@ -8856,6 +8878,7 @@ function saveCanvasPNG(){
   } else {
     renderGrid(ctx,gridW,gridH,exportCellPx,getGridLineColor());
   }
+  drawWatermarks(ctx,0,0,off.width,off.height);
   const [wIn,hIn]=getCanvasSizeIn();
   const tag=previewMode?'preview':(mysteryMode?'mystery':'pattern');
   const link=document.createElement('a');
@@ -8931,6 +8954,7 @@ function buildProjectData(){
     scatterCells:[...scatterCells],
     currentPatternPhotoRegion,
     voiceNotes:(window.__voiceNotes&&window.__voiceNotes.length)?window.__voiceNotes:undefined,
+    importedDesign:importedDesign||undefined,
     indices
   };
 }
@@ -8969,6 +8993,7 @@ function refreshSliderLabels(){
 }
 
 function restoreProject(data){
+  importedDesign=!!(data&&data.importedDesign);
   clearResizeNewPhoto();
   window.__voiceNotes=Array.isArray(data&&data.voiceNotes)?data.voiceNotes.filter(n=>n&&typeof n.data==='string'):[]; if(window.__renderVoiceNotes) window.__renderVoiceNotes();
   const s=data.settings||{};
@@ -12679,14 +12704,117 @@ updateCollapseButtons();
       palette:finalMatch.map(m=>hexToRgb(m.hex)),
       dmcMatches:finalMatch.map(m=>({code:m.code,name:m.name,hex:m.hex,rgb:hexToRgb(m.hex),catalogType:m.catalogType})),
       symbolRank:sr, hiddenColors:[], scatterCells:[], hiddenColorCells:{},
-      indices:Array.from(cellCl,k=>palIdx[k])
+      indices:Array.from(cellCl,k=>palIdx[k]), importedDesign:true
     });
+    if(window.__wmRedraw) window.__wmRedraw();
     statusEl.innerHTML+=' <b style="color:#0a7a2a">✓ Built — it is on the canvas now. Save it to your projects so you have it.</b>';
   }
 
   input.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; loadFile(f); });
   document.getElementById('importDesignRecheck').addEventListener('click',()=>{ if(img) readGrid(); });
   buildBtn.addEventListener('click',build);
+})();
+
+// ── MY WATERMARK (imported designs only) ────────────────────────────────────
+// importedDesign is true only for patterns built with Import Finished Design
+// (and saved projects made from them). Photo-generated patterns never get it.
+var importedDesign=false;
+const WM_KEY='dd_watermark';
+let wm={on:false,logo:null,opacity:0.35,copies:[{x:0.5,y:0.5,w:0.3}],sel:0};
+let wmImg=null;
+try{ const s=JSON.parse(localStorage.getItem(WM_KEY)||'null'); if(s) wm=Object.assign(wm,s); }catch(e){}
+if(!Array.isArray(wm.copies)||!wm.copies.length) wm.copies=[{x:0.5,y:0.5,w:0.3}];
+function wmSave(){ try{ localStorage.setItem(WM_KEY,JSON.stringify(wm)); }catch(e){ alert('Your logo file is too big for the Studio to remember. Try a smaller PNG.'); } }
+function wmReady(){ return !!(importedDesign && wm.on && wmImg && wmImg.complete && wmImg.naturalWidth); }
+// Draws every copy onto a chart area (x0,y0,w,h) in pixels.
+function drawWatermarks(ctx,x0,y0,w,h,force){
+  if(!(force?(wmImg&&wmImg.naturalWidth):wmReady())) return;
+  ctx.save(); ctx.globalAlpha=wm.opacity;
+  wm.copies.forEach(c=>{
+    const lw=c.w*w, lh=lw*wmImg.naturalHeight/wmImg.naturalWidth;
+    ctx.drawImage(wmImg,x0+c.x*w-lw/2,y0+c.y*h-lh/2,lw,lh);
+  });
+  ctx.restore();
+}
+// Same for the PDF (inches). The see-through amount is baked into the image.
+function addPdfWatermarks(pdf,x0,y0,w,h){
+  if(!wmReady()) return;
+  const c=document.createElement('canvas'); c.width=wmImg.naturalWidth; c.height=wmImg.naturalHeight;
+  const cx=c.getContext('2d'); cx.globalAlpha=wm.opacity; cx.drawImage(wmImg,0,0);
+  const data=c.toDataURL('image/png');
+  wm.copies.forEach((cp,i)=>{
+    const lw=cp.w*w, lh=lw*c.height/c.width;
+    pdf.addImage(data,'PNG',x0+cp.x*w-lw/2,y0+cp.y*h-lh/2,lw,lh,'hluwm','FAST');
+  });
+}
+(function(){
+  const on=document.getElementById('wmOn'); if(!on) return;
+  const logoIn=document.getElementById('wmLogoInput'), thumb=document.getElementById('wmLogoThumb');
+  const ctrls=document.getElementById('wmControls'), op=document.getElementById('wmOpacity'), opV=document.getElementById('wmOpacityVal');
+  const sz=document.getElementById('wmSize'), szV=document.getElementById('wmSizeVal'), pv=document.getElementById('wmPreview');
+  let chartArea=null; // where the chart sits inside the preview
+  function loadLogo(src){ wmImg=new Image(); wmImg.onload=()=>{ thumb.src=src; thumb.style.display='inline-block'; sync(); }; wmImg.src=src; }
+  function sync(){
+    on.checked=!!wm.on;
+    ctrls.style.display=wmImg?'block':'none';
+    op.value=Math.round(wm.opacity*100); opV.textContent=op.value+'%';
+    wm.sel=Math.min(wm.sel||0,wm.copies.length-1);
+    sz.value=Math.round(wm.copies[wm.sel].w*100); szV.textContent=sz.value+'%';
+    draw();
+  }
+  function draw(){
+    if(!wmImg||ctrls.style.display==='none') return;
+    const W=600;
+    let gw=gridW||84, gh=gridH||73;
+    const H=Math.round(W*gh/gw);
+    pv.width=W; pv.height=H;
+    const ctx=pv.getContext('2d');
+    ctx.fillStyle='#eee'; ctx.fillRect(0,0,W,H);
+    if(indices.length){
+      const cell=Math.max(2,Math.floor(W/gw)-1);
+      const off=document.createElement('canvas'); off.width=gw*(cell+1)+1; off.height=gh*(cell+1)+1;
+      renderGrid(off.getContext('2d'),gw,gh,cell,getGridLineColor());
+      ctx.drawImage(off,0,0,W,H);
+    } else {
+      ctx.fillStyle='#888'; ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.fillText('Import a design to see it here',W/2,H/2);
+    }
+    chartArea={x:0,y:0,w:W,h:H};
+    drawWatermarks(ctx,0,0,W,H,true);
+    const c=wm.copies[wm.sel]; const lw=c.w*W, lh=lw*wmImg.naturalHeight/wmImg.naturalWidth;
+    ctx.strokeStyle='#d00'; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.strokeRect(c.x*W-lw/2,c.y*H-lh/2,lw,lh);
+  }
+  window.__wmRedraw=draw;
+  function toFrac(ev){ const r=pv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width, y:(ev.clientY-r.top)/r.height}; }
+  function hit(p){
+    const W=pv.width,H=pv.height;
+    for(let i=wm.copies.length-1;i>=0;i--){ const c=wm.copies[i]; const lw=c.w, lh=c.w*W*wmImg.naturalHeight/wmImg.naturalWidth/H;
+      if(Math.abs(p.x-c.x)<=lw/2&&Math.abs(p.y-c.y)<=lh/2) return i; }
+    return -1;
+  }
+  let drag=null;
+  pv.addEventListener('pointerdown',ev=>{ const p=toFrac(ev); const i=hit(p); if(i<0) return; wm.sel=i; drag={dx:p.x-wm.copies[i].x,dy:p.y-wm.copies[i].y}; pv.setPointerCapture(ev.pointerId); sync(); });
+  pv.addEventListener('pointermove',ev=>{ if(!drag) return; const p=toFrac(ev); const c=wm.copies[wm.sel]; c.x=Math.max(0,Math.min(1,p.x-drag.dx)); c.y=Math.max(0,Math.min(1,p.y-drag.dy)); draw(); });
+  const end=()=>{ if(drag){ drag=null; wmSave(); } };
+  pv.addEventListener('pointerup',end); pv.addEventListener('pointercancel',end);
+  on.addEventListener('change',()=>{ wm.on=on.checked; wmSave(); if(wm.on&&!wmImg) logoIn.click(); });
+  op.addEventListener('input',()=>{ wm.opacity=op.value/100; opV.textContent=op.value+'%'; draw(); });
+  op.addEventListener('change',wmSave);
+  sz.addEventListener('input',()=>{ wm.copies[wm.sel].w=sz.value/100; szV.textContent=sz.value+'%'; draw(); });
+  sz.addEventListener('change',wmSave);
+  document.getElementById('wmAddCopy').addEventListener('click',()=>{ const c=wm.copies[wm.sel]; wm.copies.push({x:Math.min(0.95,c.x+0.12),y:Math.min(0.95,c.y+0.12),w:c.w}); wm.sel=wm.copies.length-1; wmSave(); sync(); });
+  document.getElementById('wmRemoveCopy').addEventListener('click',()=>{ if(wm.copies.length<=1){ alert('This is your only watermark. To turn it off, untick "Add my watermark".'); return; } wm.copies.splice(wm.sel,1); wm.sel=0; wmSave(); sync(); });
+  logoIn.addEventListener('change',e=>{
+    const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ const im=new Image(); im.onload=()=>{
+      // Shrinks big logos so the Studio can remember them; keeps transparency.
+      const s=Math.min(1,1000/Math.max(im.width,im.height)); const c=document.createElement('canvas');
+      c.width=Math.round(im.width*s); c.height=Math.round(im.height*s); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      wm.logo=c.toDataURL('image/png'); wm.on=true; wmSave(); loadLogo(wm.logo);
+    }; im.src=r.result; };
+    r.readAsDataURL(f);
+  });
+  if(wm.logo) loadLogo(wm.logo); else sync();
 })();
 (function(){
   const ls=document.getElementById('letterSize'), pq=document.getElementById('pngCellSize');
