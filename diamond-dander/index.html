@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-14a</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-14b</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -1108,6 +1108,20 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
       <button class="btn btn-out" id="plLinkBtn" style="margin-top:0;width:100%">🔗 Link to Production Line</button>
       <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="plAuto" checked> Send exports automatically while linked</label>
       <div class="small-note" id="plStatus" style="margin:0.4rem 0 0">Not linked.</div>
+    </div>
+    <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;font-size:0.72rem">
+      <label style="flex:1;margin:0">Letter size
+        <select id="letterSize" style="width:100%;font-size:0.75rem" title="How big the letters are inside each box — on screen and in the PNG">
+          <option value="0.6">Normal</option>
+          <option value="0.72">Big</option>
+          <option value="0.85">Biggest</option>
+        </select></label>
+      <label style="flex:1;margin:0">PNG quality
+        <select id="pngCellSize" style="width:100%;font-size:0.75rem" title="Bigger boxes = sharper letters when you zoom or print the PNG (bigger file)">
+          <option value="14">Standard</option>
+          <option value="28">Sharp</option>
+          <option value="42">Extra sharp (print)</option>
+        </select></label>
     </div>
     <button class="btn btn-out" id="saveCanvasBtn" disabled style="margin-top:0">↓ Save Canvas PNG</button>
 
@@ -4210,6 +4224,12 @@ function getGridLineColor(){
   return `rgb(${v},${v},${v})`;
 }
 
+// Letter size in each box (on screen and in Save Canvas PNG). Remembered on this device.
+function getLetterScale(){
+  const el=document.getElementById('letterSize');
+  const v=parseFloat(el?el.value:'');
+  return (v>=0.5&&v<=0.9)?v:0.60;
+}
 function renderGrid(ctx,w,h,cellPx,gridLineColor){
   const gap=1; // 1px grid line
   const total_w=w*(cellPx+gap)+gap;
@@ -4219,7 +4239,7 @@ function renderGrid(ctx,w,h,cellPx,gridLineColor){
   ctx.fillRect(0,0,total_w,total_h);
 
   const symSet=document.getElementById('symSet').value;
-  const fontSize=Math.max(5,Math.round(cellPx*0.60));
+  const fontSize=Math.max(5,Math.round(cellPx*getLetterScale()));
   ctx.font=`bold ${fontSize}px Arial,sans-serif`;
   ctx.textAlign='center';
   ctx.textBaseline='middle';
@@ -4240,8 +4260,8 @@ function renderGrid(ctx,w,h,cellPx,gridLineColor){
         if(cellPx>=7){
           ctx.fillStyle='#111';
           const sym=getSymbol(symbolRank[pi],symSet);
-          let dynamicFontSize=Math.max(5,Math.round(cellPx*0.60));
-          if(sym.length>1) dynamicFontSize=Math.max(4,dynamicFontSize-0.5);
+          let dynamicFontSize=Math.max(5,Math.round(cellPx*getLetterScale()));
+          if(sym.length>1) dynamicFontSize=Math.max(4,Math.min(dynamicFontSize,Math.round(cellPx*Math.min(getLetterScale(),0.62)))-0.5);
           ctx.font=`bold ${dynamicFontSize}px Arial,sans-serif`;
           drawSymbolText(ctx,sym,x+cellPx/2,y+cellPx/2,cellPx*0.04);
         }
@@ -4255,9 +4275,10 @@ function renderGrid(ctx,w,h,cellPx,gridLineColor){
           ctx.fillStyle=lum>140?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.92)';
           const sym=getSymbol(symbolRank[pi],symSet);
 
-          let dynamicFontSize = Math.max(5,Math.round(cellPx*0.60));
+          let dynamicFontSize = Math.max(5,Math.round(cellPx*getLetterScale()));
           if(sym.length > 1){
-            dynamicFontSize = Math.max(4,dynamicFontSize - 0.5);
+            // Two-character symbols (A1, B2…) can't grow as much or they'd spill out of the box.
+            dynamicFontSize = Math.max(4,Math.min(dynamicFontSize,Math.round(cellPx*Math.min(getLetterScale(),0.62))) - 0.5);
           }
 
           ctx.font=`bold ${dynamicFontSize}px Arial,sans-serif`;
@@ -8824,7 +8845,7 @@ const openProjectInput=document.getElementById('openProjectInput');
 
 function saveCanvasPNG(){
   if(!indices.length){ alert('Generate a canvas first, then save it as an image.'); return; }
-  const exportCellPx=14;
+  const exportCellPx=parseInt(document.getElementById('pngCellSize')?.value)||14;
   const gap=1;
   const off=document.createElement('canvas');
   off.width=gridW*(exportCellPx+gap)+gap;
@@ -12603,20 +12624,48 @@ updateCollapseButtons();
   function showColors(){
     // Same letter order the Studio uses everywhere (by color number), so the
     // letters here are the letters on the finished chart.
-    const order=result.clusters.map((_,k)=>k).sort((a,b)=>(codeNum(result.match[a].code)-codeNum(result.match[b].code))||String(result.match[a].code).localeCompare(String(result.match[b].code)));
-    colorsEl.innerHTML=order.map((k,rank)=>{
+    const codes=[...new Set(result.match.map(m=>m.code))].sort((x,y)=>(codeNum(x)-codeNum(y))||String(x).localeCompare(String(y)));
+    const letterOf=code=>getSymbol(codes.indexOf(code),document.getElementById('symSet').value);
+    const order=result.clusters.map((_,k)=>k).sort((a,b)=>(codes.indexOf(result.match[a].code)-codes.indexOf(result.match[b].code))||(result.clusters[b].n-result.clusters[a].n));
+    if(!document.getElementById('importDmcList')){
+      const dl=document.createElement('datalist'); dl.id='importDmcList';
+      dl.innerHTML=DMC_ENTRIES.slice().sort((x,y)=>codeNum(x.code)-codeNum(y.code)).map(e=>`<option value="${e.code}">${dispCode(e)} — ${e.name}</option>`).join('');
+      document.body.appendChild(dl);
+    }
+    colorsEl.innerHTML=order.map(k=>{
       const cl=result.clusters[k], m=result.match[k];
       const src=rgbToHex(...cl.rgb);
-      return `<div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.2rem"><b style="width:1.3rem">${getSymbol(rank,document.getElementById('symSet').value)}</b><span title="Color in your image" style="width:14px;height:14px;border-radius:50%;background:${src};border:1px solid #999;flex:none"></span>→<span title="Studio color" style="width:14px;height:14px;background:${m.hex};border:1px solid #999;flex:none"></span><span style="font-family:'DM Mono',monospace;color:var(--red)">${dispCode(m)}</span><span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</span><span style="margin-left:auto">${cl.n.toLocaleString()}</span></div>`;
-    }).join('')+`<div class="small-note" style="margin-top:0.3rem">Colors are matched to the closest Studio color. After building, click any color in the Color Legend to change its number if it isn't the one from your library.</div>`;
+      const shared=result.match.filter(x=>x.code===m.code).length>1;
+      return `<div style="border-bottom:1px solid var(--border);padding:0.25rem 0">
+        <div style="display:flex;align-items:center;gap:0.35rem"><b style="width:1.3rem">${letterOf(m.code)}</b><span title="Color in your image" style="width:14px;height:14px;border-radius:50%;background:${src};border:1px solid #999;flex:none"></span>→<span title="Studio color" style="width:14px;height:14px;background:${m.hex};border:1px solid #999;flex:none"></span><span style="font-family:'DM Mono',monospace;color:var(--red)">${dispCode(m)}</span><span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</span><span style="margin-left:auto">${cl.n.toLocaleString()}</span></div>
+        <div style="display:flex;align-items:center;gap:0.3rem;margin:0.2rem 0 0 1.65rem"><span style="color:var(--muted)">Change to #</span><input type="text" list="importDmcList" data-k="${k}" class="import-dmc-change" placeholder="e.g. 310" style="width:5.5rem;font-size:0.72rem;padding:0.15rem 0.3rem;border:1px solid var(--border-strong);border-radius:3px">${result.userSet&&result.userSet[k]?'<span style="color:#0a7a2a">✓ yours</span>':''}${shared?'<span style="color:var(--red)">same # as another color — they will become one</span>':''}</div>
+      </div>`;
+    }).join('')+`<div class="small-note" style="margin-top:0.3rem">The Studio picked the closest color number. If it isn't the one from your Dotterly library, type your number in "Change to #" and press Enter.</div>`;
+    colorsEl.querySelectorAll('.import-dmc-change').forEach(inp=>{
+      const apply=()=>{
+        const v=inp.value.trim(); if(!v) return;
+        const e=matchDmcToken(v);
+        if(!e){ inp.style.borderColor='var(--red)'; inp.title='No color with that number'; return; }
+        const k=parseInt(inp.dataset.k,10);
+        result.match[k]=e; result.userSet=result.userSet||{}; result.userSet[k]=true;
+        showColors();
+      };
+      inp.addEventListener('change',apply);
+      inp.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); apply(); } });
+    });
   }
 
   function build(){
     if(!result) return;
     if(indices.length && !confirm('This replaces the pattern that is open right now. Save it first if you need it. Continue?')) return;
     const {cols,rows,clusters,cellCl,match}=result;
-    const order=clusters.map((_,k)=>k).sort((a,b)=>(codeNum(match[a].code)-codeNum(match[b].code))||String(match[a].code).localeCompare(String(match[b].code)));
-    const sr={}; order.forEach((k,rank)=>{ sr[k]=rank; });
+    // One palette entry per color number (two image colors given the same
+    // number become one color), letters in the Studio's usual number order.
+    const codes=[...new Set(match.map(m=>m.code))].sort((x,y)=>(codeNum(x)-codeNum(y))||String(x).localeCompare(String(y)));
+    const entryOf={}; match.forEach(m=>{ entryOf[m.code]=m; });
+    const palIdx=match.map(m=>codes.indexOf(m.code));
+    const finalMatch=codes.map(c=>entryOf[c]);
+    const sr={}; codes.forEach((c,i)=>{ sr[i]=i; });
     const tum=Object.entries(TUMBLER_GRIDS).find(([k,[w,h]])=>w===cols&&h===rows);
     const useTumbler=!!(tum && drillMM===2.8);
     // No photo is kept: Generate Canvas would re-read an old photo and replace the import.
@@ -12627,10 +12676,10 @@ updateCollapseButtons();
       settings:{ sizePreset:useTumbler?tum[0]:'custom', custWDrills:String(cols), custHDrills:String(rows), customUnitMode:'drills', drillMM:drillMM, mixedStone:mixedStone, mirrorMode:'none' },
       appMode, uiMode, restrictPaletteEnabled, restrictedCodes:[...restrictedCodes],
       grid:{gridW:cols,gridH:rows},
-      palette:match.map(m=>hexToRgb(m.hex)),
-      dmcMatches:match.map(m=>({code:m.code,name:m.name,hex:m.hex,rgb:hexToRgb(m.hex),catalogType:m.catalogType})),
+      palette:finalMatch.map(m=>hexToRgb(m.hex)),
+      dmcMatches:finalMatch.map(m=>({code:m.code,name:m.name,hex:m.hex,rgb:hexToRgb(m.hex),catalogType:m.catalogType})),
       symbolRank:sr, hiddenColors:[], scatterCells:[], hiddenColorCells:{},
-      indices:Array.from(cellCl)
+      indices:Array.from(cellCl,k=>palIdx[k])
     });
     statusEl.innerHTML+=' <b style="color:#0a7a2a">✓ Built — it is on the canvas now. Save it to your projects so you have it.</b>';
   }
@@ -12638,6 +12687,16 @@ updateCollapseButtons();
   input.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; loadFile(f); });
   document.getElementById('importDesignRecheck').addEventListener('click',()=>{ if(img) readGrid(); });
   buildBtn.addEventListener('click',build);
+})();
+(function(){
+  const ls=document.getElementById('letterSize'), pq=document.getElementById('pngCellSize');
+  try{ const a=localStorage.getItem('dd_letterSize'); if(a&&ls) ls.value=a; const b=localStorage.getItem('dd_pngCellSize'); if(b&&pq) pq.value=b; }catch(e){}
+  if(!ls.value) ls.value='0.6'; if(!pq.value) pq.value='14';
+  ls?.addEventListener('change',()=>{
+    try{ localStorage.setItem('dd_letterSize',ls.value); }catch(e){}
+    if(indices.length && !previewMode){ const cellPx=parseInt(document.getElementById('cellSize').value); renderGrid(diamondCanvas.getContext('2d'),gridW,gridH,cellPx,getGridLineColor()); }
+  });
+  pq?.addEventListener('change',()=>{ try{ localStorage.setItem('dd_pngCellSize',pq.value); }catch(e){} });
 })();
 
 </script>
