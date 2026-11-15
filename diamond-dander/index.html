@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-10a</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-14a</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -531,6 +531,24 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 
   <button type="button" class="btn btn-out" id="moreToolsBtn" style="display:none;margin-bottom:0.6rem" title="Opens Restrict Palette, Duplicate & Resize, Export PDF/Shopping List, Master Shopping List, Save & Load, and Magic Generate — everything not in the Quick Bar right now">☰ More Tools</button>
   <button type="button" class="btn btn-out" id="blankSlateBtn" style="margin-bottom:0.6rem" title="Closes whatever's currently open and returns to a completely empty canvas. Doesn't touch your saved project library — nothing gets deleted, this is purely about what's showing on screen right now.">🗑 Blank Slate</button>
+
+  <div class="sb-section" id="importDesignSection">
+    <div class="sec-label">Import Finished Design</div>
+    <div class="small-note" style="margin-bottom:0.5rem">Already made the design somewhere else, like Dotterly? Drop in its PNG, even without symbols and even with round dots. The Studio reads one color per drill, turns each dot into a square box, matches it to your colors and adds the letters. No redesigning.</div>
+    <label class="btn btn-out" style="display:block;text-align:center;cursor:pointer;margin-bottom:0.4rem">📥 Choose finished design PNG<input type="file" id="importDesignInput" accept="image/*" style="display:none"></label>
+    <div id="importDesignPanel" style="display:none">
+      <canvas id="importDesignPreview" style="width:100%;border:1px solid var(--border-strong);border-radius:4px;background:#fff;display:block;margin-bottom:0.4rem"></canvas>
+      <div class="small-note" id="importDesignStatus" style="margin-bottom:0.4rem"></div>
+      <div style="display:flex;gap:0.35rem;align-items:center;margin-bottom:0.4rem;font-size:0.75rem">
+        <label style="margin:0">Across</label><input type="number" id="importDesignCols" min="5" max="600" style="width:4.2rem">
+        <label style="margin:0">Down</label><input type="number" id="importDesignRows" min="5" max="600" style="width:4.2rem">
+        <button type="button" class="btn btn-out" id="importDesignRecheck" style="padding:0.25rem 0.5rem;width:auto;margin:0" title="Re-read the design using the drill counts you typed">↻</button>
+      </div>
+      <div class="small-note" style="margin-bottom:0.4rem">Check the drill counts match your design. If the red lines on the preview don't sit between the dots, type the right numbers and press ↻.</div>
+      <div id="importDesignColors" style="font-size:0.72rem;margin-bottom:0.45rem"></div>
+      <button type="button" class="btn" id="importDesignBuildBtn">✓ Build pattern with letters</button>
+    </div>
+  </div>
 
   <div class="sb-section" id="uploadPhotoSection">
     <div class="sec-label">Upload Photo</div>
@@ -12434,6 +12452,194 @@ document.getElementById('rightCollapseBtn')?.addEventListener('click',()=>{
 window.addEventListener('resize',updateLayoutColumns);
 updateLayoutColumns();
 updateCollapseButtons();
+
+// ── IMPORT FINISHED DESIGN (Dotterly / other apps) ──────────────────────────
+// Reads an already-finished pattern image (round dots or squares, usually with
+// no symbols), finds the drill grid, takes ONE color per drill from the middle
+// of each dot, matches every distinct color to the active catalog (each source
+// color gets its own catalog color so nothing merges), then opens it as a
+// normal Studio pattern — square boxes, letters, legend, PDF all work as usual.
+(function(){
+  const input=document.getElementById('importDesignInput');
+  if(!input) return;
+  const panel=document.getElementById('importDesignPanel');
+  const prev=document.getElementById('importDesignPreview');
+  const statusEl=document.getElementById('importDesignStatus');
+  const colsEl=document.getElementById('importDesignCols');
+  const rowsEl=document.getElementById('importDesignRows');
+  const colorsEl=document.getElementById('importDesignColors');
+  const buildBtn=document.getElementById('importDesignBuildBtn');
+  let img=null, px=null, W=0, H=0, bgMask=null, box=null, result=null;
+
+  function loadFile(file){
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      img=im; W=im.naturalWidth; H=im.naturalHeight;
+      const c=document.createElement('canvas'); c.width=W; c.height=H;
+      const cx=c.getContext('2d',{willReadFrequently:true}); cx.drawImage(im,0,0);
+      px=cx.getImageData(0,0,W,H).data;
+      URL.revokeObjectURL(url);
+      buildBgMask(); findContentBox();
+      const det=detectGrid();
+      colsEl.value=det.cols; rowsEl.value=det.rows;
+      panel.style.display='block';
+      readGrid();
+    };
+    im.onerror=()=>{ alert('That image could not be opened. Try saving it as a PNG.'); URL.revokeObjectURL(url); };
+    im.src=url;
+  }
+
+  // Background = the space between dots. Transparent PNGs: alpha. Otherwise:
+  // the color most common around the image border.
+  function buildBgMask(){
+    bgMask=new Uint8Array(W*H);
+    let trans=0;
+    for(let i=0;i<W*H;i++) if(px[i*4+3]<128){ bgMask[i]=1; trans++; }
+    if(trans>W*H*0.005) return;
+    const counts=new Map(); let best=null,bestN=0;
+    const add=(x,y)=>{ const i=(y*W+x)*4; const k=(px[i]>>3)+','+(px[i+1]>>3)+','+(px[i+2]>>3); const n=(counts.get(k)||0)+1; counts.set(k,n); if(n>bestN){bestN=n;best=[px[i],px[i+1],px[i+2]];} };
+    for(let x=0;x<W;x++){ add(x,0); add(x,H-1); }
+    for(let y=0;y<H;y++){ add(0,y); add(W-1,y); }
+    for(let i=0;i<W*H;i++){ const dr=px[i*4]-best[0],dg=px[i*4+1]-best[1],db=px[i*4+2]-best[2]; if(dr*dr+dg*dg+db*db<900) bgMask[i]=1; }
+  }
+
+  // Trim empty margins so the grid starts at the first dot.
+  function findContentBox(){
+    let x0=W,x1=-1,y0=H,y1=-1;
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(!bgMask[y*W+x]){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    if(x1<0){ box={x:0,y:0,w:W,h:H}; return; }
+    box={x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
+  }
+
+  // Finds the number of drills along one direction: the count whose cell
+  // edges land on the gaps between dots and whose cell middles land on dots.
+  function bestCount(profile){
+    const len=profile.length; let bestN=0,bestS=-Infinity;
+    const at=p=>{ const i=Math.max(0,Math.min(len-1,Math.round(p))); return profile[i]; };
+    for(let n=5;n<=Math.min(600,Math.floor(len/4));n++){
+      const pitch=len/n; let sb=0,sc=0;
+      for(let k=0;k<n;k++){ sb+=at(k*pitch)+at(k*pitch+1)+at(k*pitch-1); sc+=at((k+0.5)*pitch); }
+      const s=sb/(3*n)-sc/n;
+      if(s>bestS+1e-9){ bestS=s; bestN=n; }
+    }
+    return bestN;
+  }
+  function detectGrid(){
+    const colP=new Float32Array(box.w), rowP=new Float32Array(box.h);
+    for(let y=0;y<box.h;y++) for(let x=0;x<box.w;x++){ const m=bgMask[(box.y+y)*W+box.x+x]; colP[x]+=m; rowP[y]+=m; }
+    for(let x=0;x<box.w;x++) colP[x]/=box.h;
+    for(let y=0;y<box.h;y++) rowP[y]/=box.w;
+    let cols=bestCount(colP), rows=bestCount(rowP);
+    // Dots are round/square, so the spacing should match both ways. If one
+    // direction disagrees, trust the other one's spacing.
+    const pc=box.w/cols, pr=box.h/rows;
+    if(Math.abs(pc-pr)/Math.max(pc,pr)>0.08){
+      const p=Math.min(pc,pr); cols=Math.round(box.w/p); rows=Math.round(box.h/p);
+    }
+    return {cols,rows};
+  }
+
+  function readGrid(){
+    const cols=Math.max(5,Math.min(600,parseInt(colsEl.value)||0));
+    const rows=Math.max(5,Math.min(600,parseInt(rowsEl.value)||0));
+    colsEl.value=cols; rowsEl.value=rows;
+    const pw=box.w/cols, ph=box.h/rows, rad=Math.max(1,Math.min(pw,ph)*0.22);
+    const cellRGB=new Array(cols*rows);
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const cxp=box.x+(c+0.5)*pw, cyp=box.y+(r+0.5)*ph;
+      let sr=0,sg=0,sb=0,n=0;
+      for(let y=Math.floor(cyp-rad);y<=Math.ceil(cyp+rad);y++) for(let x=Math.floor(cxp-rad);x<=Math.ceil(cxp+rad);x++){
+        if(x<0||y<0||x>=W||y>=H) continue;
+        const i=y*W+x; if(bgMask[i]) continue;
+        sr+=px[i*4]; sg+=px[i*4+1]; sb+=px[i*4+2]; n++;
+      }
+      cellRGB[r*cols+c]=n?[sr/n,sg/n,sb/n]:null;
+    }
+    // Group cells into the design's distinct colors.
+    const clusters=[]; const cellCl=new Int32Array(cols*rows).fill(-1);
+    for(let i=0;i<cellRGB.length;i++){
+      const v=cellRGB[i]; if(!v) continue;
+      let bi=-1,bd=24*24;
+      for(let k=0;k<clusters.length;k++){ const d=colorDist(v,clusters[k].rgb); if(d<bd){bd=d;bi=k;} }
+      if(bi<0){ clusters.push({rgb:v.slice(),sum:v.slice(),n:1}); bi=clusters.length-1; }
+      else { const cl=clusters[bi]; cl.n++; cl.sum[0]+=v[0]; cl.sum[1]+=v[1]; cl.sum[2]+=v[2]; cl.rgb=[cl.sum[0]/cl.n,cl.sum[1]/cl.n,cl.sum[2]/cl.n]; }
+      cellCl[i]=bi;
+    }
+    // A drill with no readable color (blank spot) takes the most common color.
+    let topK=0; clusters.forEach((cl,k)=>{ if(cl.n>clusters[topK].n) topK=k; });
+    let blanks=0; for(let i=0;i<cellCl.length;i++) if(cellCl[i]<0){ cellCl[i]=topK; blanks++; }
+    // Match each design color to its own catalog color (closest pairs first,
+    // never two design colors on the same code).
+    const pool=getActiveDmcEntries();
+    const pairs=[];
+    clusters.forEach((cl,k)=>pool.forEach((e,j)=>pairs.push([colorDist(cl.rgb,e.rgb),k,j])));
+    pairs.sort((a,b)=>a[0]-b[0]);
+    const match=new Array(clusters.length).fill(null), usedE=new Set(); let left=clusters.length;
+    for(const [d,k,j] of pairs){ if(!left) break; if(match[k]||usedE.has(j)) continue; match[k]=pool[j]; usedE.add(j); left--; }
+    for(let k=0;k<clusters.length;k++) if(!match[k]) match[k]=findClosestDMC(...clusters[k].rgb);
+    result={cols,rows,clusters,cellCl,match,blanks};
+    drawPreview(); showColors();
+  }
+
+  function drawPreview(){
+    const maxW=600, s=Math.min(1,maxW/box.w);
+    prev.width=Math.round(box.w*s); prev.height=Math.round(box.h*s);
+    const cx=prev.getContext('2d');
+    cx.clearRect(0,0,prev.width,prev.height);
+    cx.drawImage(img,box.x,box.y,box.w,box.h,0,0,prev.width,prev.height);
+    cx.strokeStyle='rgba(220,0,0,0.4)'; cx.lineWidth=1;
+    const pw=prev.width/result.cols, ph=prev.height/result.rows;
+    cx.beginPath();
+    for(let c=0;c<=result.cols;c++){ const x=Math.round(c*pw)+0.5; cx.moveTo(x,0); cx.lineTo(x,prev.height); }
+    for(let r=0;r<=result.rows;r++){ const y=Math.round(r*ph)+0.5; cx.moveTo(0,y); cx.lineTo(prev.width,y); }
+    cx.stroke();
+    const tum=Object.entries(TUMBLER_GRIDS).find(([k,[w,h]])=>w===result.cols&&h===result.rows);
+    const tumName={tumbler3:'3oz',tumbler12:'12oz',tumbler20:'20oz',tumbler30:'30oz'};
+    statusEl.innerHTML=`Found <b>${result.cols} × ${result.rows}</b> drills (${(result.cols*result.rows).toLocaleString()} total)${tum?` — matches your <b>${tumName[tum[0]]} tumbler</b> size`:''}. <b>${result.clusters.length}</b> colors.`+(result.blanks?` ${result.blanks} blank spot(s) filled with the main color.`:'')+(result.clusters.length>60?' <span style="color:var(--red)">That is a lot of colors — this looks more like a photo than a finished pattern. For photos use Upload Photo below.</span>':'');
+  }
+
+  function showColors(){
+    // Same letter order the Studio uses everywhere (by color number), so the
+    // letters here are the letters on the finished chart.
+    const order=result.clusters.map((_,k)=>k).sort((a,b)=>(codeNum(result.match[a].code)-codeNum(result.match[b].code))||String(result.match[a].code).localeCompare(String(result.match[b].code)));
+    colorsEl.innerHTML=order.map((k,rank)=>{
+      const cl=result.clusters[k], m=result.match[k];
+      const src=rgbToHex(...cl.rgb);
+      return `<div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.2rem"><b style="width:1.3rem">${getSymbol(rank,document.getElementById('symSet').value)}</b><span title="Color in your image" style="width:14px;height:14px;border-radius:50%;background:${src};border:1px solid #999;flex:none"></span>→<span title="Studio color" style="width:14px;height:14px;background:${m.hex};border:1px solid #999;flex:none"></span><span style="font-family:'DM Mono',monospace;color:var(--red)">${dispCode(m)}</span><span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</span><span style="margin-left:auto">${cl.n.toLocaleString()}</span></div>`;
+    }).join('')+`<div class="small-note" style="margin-top:0.3rem">Colors are matched to the closest Studio color. After building, click any color in the Color Legend to change its number if it isn't the one from your library.</div>`;
+  }
+
+  function build(){
+    if(!result) return;
+    if(indices.length && !confirm('This replaces the pattern that is open right now. Save it first if you need it. Continue?')) return;
+    const {cols,rows,clusters,cellCl,match}=result;
+    const order=clusters.map((_,k)=>k).sort((a,b)=>(codeNum(match[a].code)-codeNum(match[b].code))||String(match[a].code).localeCompare(String(match[b].code)));
+    const sr={}; order.forEach((k,rank)=>{ sr[k]=rank; });
+    const tum=Object.entries(TUMBLER_GRIDS).find(([k,[w,h]])=>w===cols&&h===rows);
+    const useTumbler=!!(tum && drillMM===2.8);
+    // No photo is kept: Generate Canvas would re-read an old photo and replace the import.
+    sourceImage=null;
+    try{ document.getElementById('cropZone').style.display='none'; uploadZone.style.display=''; }catch(e){}
+    restoreProject({
+      app:'diamond-art-studio', version:1, image:null,
+      settings:{ sizePreset:useTumbler?tum[0]:'custom', custWDrills:String(cols), custHDrills:String(rows), customUnitMode:'drills', drillMM:drillMM, mixedStone:mixedStone, mirrorMode:'none' },
+      appMode, uiMode, restrictPaletteEnabled, restrictedCodes:[...restrictedCodes],
+      grid:{gridW:cols,gridH:rows},
+      palette:match.map(m=>hexToRgb(m.hex)),
+      dmcMatches:match.map(m=>({code:m.code,name:m.name,hex:m.hex,rgb:hexToRgb(m.hex),catalogType:m.catalogType})),
+      symbolRank:sr, hiddenColors:[], scatterCells:[], hiddenColorCells:{},
+      indices:Array.from(cellCl)
+    });
+    statusEl.innerHTML+=' <b style="color:#0a7a2a">✓ Built — it is on the canvas now. Save it to your projects so you have it.</b>';
+  }
+
+  input.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; loadFile(f); });
+  document.getElementById('importDesignRecheck').addEventListener('click',()=>{ if(img) readGrid(); });
+  buildBtn.addEventListener('click',build);
+})();
+
 </script>
 
 <!-- Appears the instant fullscreen exits for any reason (Escape, F11, a
