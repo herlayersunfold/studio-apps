@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-14c</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-15a</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -649,6 +649,16 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
       <button class="drill-btn" id="drillSS12" data-size="3">SS12 (3mm)</button>
       <button class="drill-btn" id="drillSS16" data-size="4">SS16 (4mm)</button>
       <button class="drill-btn" id="drillSS20" data-size="5">SS20 (5mm)</button>
+    </div>
+    <div id="rsPaletteWrap" style="display:none;margin-top:0.5rem">
+      <label style="margin:0">Rhinestone color palette
+        <select id="rsPalette" style="width:100%">
+          <option value="both">Both — RS + CB</option>
+          <option value="rs">RS only (full Rhinestone catalog)</option>
+          <option value="cb">CB only (CraftBully colors)</option>
+        </select>
+      </label>
+      <div class="small-note" id="rsPaletteNote" style="margin-top:0.25rem"></div>
     </div>
     <div class="small-note" id="drillNote" style="margin-top:0.4rem">Round drills: 2.8 mm · 9.07 drills/inch</div>
   </div>
@@ -1985,7 +1995,15 @@ function rebuildDmcEntries(){ DMC_ENTRIES = Object.entries(DMC).map(([code,{n,h}
 let appMode='diamond'; // 'diamond' | 'rhinestone'
 let uiMode='diamond'; // 'diamond' | 'rhinestone' | 'mixed' — tracks the actual header selection (declared early: referenced by buildDmcOptionsHtml below, which runs at page load)
 let mixedModeActive=false; // convenience flag: uiMode==='mixed'
-function catalogForMode(mode){ return mode==='rhinestone' ? DMC_RHINESTONE : DMC_DIAMOND; }
+// Which rhinestone colors Rhinestone mode uses: 'both' (RS + CB), 'rs' or 'cb'. Remembered on this device.
+let rsPaletteChoice='both';
+try{ const v=localStorage.getItem('dd_rsPalette'); if(v==='rs'||v==='cb'||v==='both') rsPaletteChoice=v; }catch(e){}
+function catalogForMode(mode){
+  if(mode!=='rhinestone') return DMC_DIAMOND;
+  if(rsPaletteChoice==='both') return DMC_RHINESTONE;
+  const wantCB=(rsPaletteChoice==='cb');
+  return Object.fromEntries(Object.entries(DMC_RHINESTONE).filter(([code])=>/^CB\d+$/.test(code)===wantCB));
+}
 // Long form: used in most on-screen text ("DMC 310" vs "RS-14")
 // Both accept an optional catalog entry so a color's own catalogType (set
 // when it's been converted via Mixed mode's "Convert to Rhinestone") wins
@@ -12134,6 +12152,8 @@ function applyModeUI(mode){
 
   document.getElementById('drillTypeDiamondGroup').style.display=isRhinestone?'none':'flex';
   document.getElementById('drillTypeRhinestoneGroup').style.display=isRhinestone?'flex':'none';
+  { const w=document.getElementById('rsPaletteWrap'); if(w) w.style.display=isRhinestone?'block':'none';
+    const n=document.getElementById('rsPaletteNote'); if(n&&isRhinestone) n.textContent=`${DMC_ENTRIES.length} colors available. New patterns use only these; patterns already on the canvas keep their colors until you generate again.`; }
   document.getElementById('resizeDrillTypeDiamondGroup').style.display=isRhinestone?'none':'flex';
   document.getElementById('resizeDrillTypeRhinestoneGroup').style.display=isRhinestone?'flex':'none';
 
@@ -12815,6 +12835,15 @@ function addPdfWatermarks(pdf,x0,y0,w,h){
     r.readAsDataURL(f);
   });
   if(wm.logo) loadLogo(wm.logo); else sync();
+})();
+(function(){
+  const sel=document.getElementById('rsPalette'); if(!sel) return;
+  sel.value=rsPaletteChoice;
+  sel.addEventListener('change',()=>{
+    rsPaletteChoice=sel.value;
+    try{ localStorage.setItem('dd_rsPalette',rsPaletteChoice); }catch(e){}
+    if(uiMode==='rhinestone') applyModeUI('rhinestone');
+  });
 })();
 (function(){
   const ls=document.getElementById('letterSize'), pq=document.getElementById('pngCellSize');
