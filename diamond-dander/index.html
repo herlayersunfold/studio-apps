@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-15a</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-15b</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -566,6 +566,47 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
           <button type="button" class="btn btn-out btn-sm" id="wmRemoveCopy" style="flex:1">✕ Remove this one</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="sb-section" id="printImageSection">
+    <div class="sec-label">Print an Image</div>
+    <div class="small-note" style="margin-bottom:0.5rem">Just print a picture at the size you want — no grid, no letters, no watermark. Your pattern on the canvas isn't touched.</div>
+    <label class="btn btn-out" style="display:block;text-align:center;cursor:pointer;margin-bottom:0.4rem">🖼 Choose image to print<input type="file" id="piInput" accept="image/*" style="display:none"></label>
+    <div id="piPanel" style="display:none;font-size:0.75rem">
+      <canvas id="piPreview" style="width:100%;border:1px solid var(--border-strong);border-radius:4px;background:#fff;display:block;margin-bottom:0.4rem"></canvas>
+      <div class="small-note" id="piInfo" style="margin-bottom:0.4rem"></div>
+      <label style="margin:0 0 0.35rem;display:block">Print size
+        <select id="piSize" style="width:100%">
+          <option value="tumbler3">3oz tumbler</option>
+          <option value="tumbler12">12oz tumbler</option>
+          <option value="tumbler20" selected>20oz tumbler</option>
+          <option value="tumbler30">30oz tumbler</option>
+          <option value="custom">Custom inches</option>
+          <option value="fit">Fit to the page</option>
+        </select></label>
+      <div id="piCustomRow" style="display:none;gap:0.35rem;align-items:center;margin-bottom:0.35rem">
+        <span>W</span><input type="number" id="piW" min="0.5" max="40" step="0.01" style="width:4.6rem">
+        <span>H</span><input type="number" id="piH" min="0.5" max="40" step="0.01" style="width:4.6rem"><span>in</span>
+        <label style="margin:0 0 0 auto;display:flex;align-items:center;gap:0.2rem" title="Typing one side changes the other so the picture doesn't stretch"><input type="checkbox" id="piLock" checked>🔒</label>
+      </div>
+      <label style="margin:0 0 0.35rem;display:block">Paper
+        <select id="piPaper" style="width:100%">
+          <option value="auto">Auto (smallest that fits)</option>
+          <option value="8.5x11">Letter 8.5 × 11</option>
+          <option value="8.5x14">Legal 8.5 × 14</option>
+          <option value="11x17">Tabloid 11 × 17</option>
+          <option value="13x19">13 × 19</option>
+          <option value="8.27x11.69">A4</option>
+        </select></label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0 0 0.25rem"><input type="checkbox" id="piKeep" checked> Keep picture's shape (no stretching)</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0 0 0.25rem"><input type="checkbox" id="piMirror"> Mirror (for sublimation)</label>
+      <label style="display:flex;align-items:center;gap:0.35rem;margin:0 0 0.45rem"><input type="checkbox" id="piCut"> Thin cut line around the edge</label>
+      <div style="display:flex;gap:0.4rem">
+        <button type="button" class="btn" id="piPdfBtn" style="flex:1">⬇ Save PDF</button>
+        <button type="button" class="btn btn-out" id="piPrintBtn" style="flex:1">🖨 Print now</button>
+      </div>
+      <div class="small-note" style="margin-top:0.35rem">In the print window, set Scale to <b>100%</b> / <b>Actual size</b> (not "Fit") so it prints the exact size.</div>
     </div>
   </div>
 
@@ -12844,6 +12885,112 @@ function addPdfWatermarks(pdf,x0,y0,w,h){
     try{ localStorage.setItem('dd_rsPalette',rsPaletteChoice); }catch(e){}
     if(uiMode==='rhinestone') applyModeUI('rhinestone');
   });
+})();
+
+// ── PRINT AN IMAGE (no grid / letters / watermark) ──────────────────────────
+// Prints any picture at an exact size: a tumbler wrap size (same inches the
+// Studio uses for its tumbler grids at 2.8mm), custom inches, or fit to page.
+(function(){
+  const input=document.getElementById('piInput'); if(!input) return;
+  const $=id=>document.getElementById(id);
+  const panel=$('piPanel'), prev=$('piPreview'), info=$('piInfo'), sizeSel=$('piSize'), paperSel=$('piPaper');
+  const wEl=$('piW'), hEl=$('piH'), lockEl=$('piLock'), keepEl=$('piKeep'), mirEl=$('piMirror'), cutEl=$('piCut');
+  const PAPERS=['8.5x11','8.5x14','11x17','13x19'];
+  const MARGIN=0.15; // room left for the printer's unprintable edge
+  let img=null, imgName='image';
+  const r2=v=>Math.round(v*100)/100;
+  function tumblerIn(key){ const g=TUMBLER_GRIDS[key]; return [g[0]*2.8/25.4, g[1]*2.8/25.4]; }
+  function parsePaper(v){ const [a,b]=v.split('x').map(Number); return [a,b]; }
+  // Returns the print box (inches), the image inside it, and the page.
+  function layout(){
+    const ar=img.naturalWidth/img.naturalHeight;
+    let bw,bh;
+    if(sizeSel.value==='custom'){ bw=parseFloat(wEl.value)||1; bh=parseFloat(hEl.value)||1; }
+    else if(sizeSel.value!=='fit'){ [bw,bh]=tumblerIn(sizeSel.value); }
+    let pw,ph;
+    if(sizeSel.value==='fit'){
+      [pw,ph]=parsePaper(paperSel.value==='auto'?'8.5x11':paperSel.value);
+      if((ar>1)!==(pw>ph)) [pw,ph]=[ph,pw];
+      const aw=pw-2*MARGIN, ah=ph-2*MARGIN;
+      if(aw/ah>ar){ bh=ah; bw=ah*ar; } else { bw=aw; bh=aw/ar; }
+    } else {
+      const fits=p=>{ const [a,b]=parsePaper(p); return (bw+2*MARGIN<=a&&bh+2*MARGIN<=b)||(bw+2*MARGIN<=b&&bh+2*MARGIN<=a); };
+      const pick=paperSel.value==='auto'?(PAPERS.find(fits)||'13x19'):paperSel.value;
+      [pw,ph]=parsePaper(pick);
+      // Turn the page to fit the print best.
+      if((bw>bh)!==(pw>ph)) [pw,ph]=[ph,pw];
+    }
+    const tooBig=bw>pw-0.01||bh>ph-0.01;
+    // Picture inside the box: stretched to fill, or fitted with its shape kept.
+    let iw=bw, ih=bh;
+    if(keepEl.checked){ if(bw/bh>ar){ ih=bh; iw=bh*ar; } else { iw=bw; ih=bw/ar; } }
+    const bx=(pw-bw)/2, by=(ph-bh)/2;
+    return {pw,ph,bx,by,bw,bh,ix:bx+(bw-iw)/2,iy:by+(bh-ih)/2,iw,ih,tooBig};
+  }
+  // Image as a PNG at print resolution (mirrored if asked), so transparency is kept.
+  function printCanvas(L){
+    const maxPx=Math.round(Math.max(L.iw,L.ih)*300);
+    const s=Math.min(1,maxPx/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(img.naturalWidth*s)); c.height=Math.max(1,Math.round(img.naturalHeight*s));
+    const cx=c.getContext('2d'); cx.imageSmoothingQuality='high';
+    if(mirEl.checked){ cx.translate(c.width,0); cx.scale(-1,1); }
+    cx.drawImage(img,0,0,c.width,c.height);
+    return c;
+  }
+  function draw(){
+    if(!img) return;
+    $('piCustomRow').style.display=sizeSel.value==='custom'?'flex':'none';
+    const L=layout();
+    const W=520, k=W/L.pw; prev.width=W; prev.height=Math.round(L.ph*k);
+    const cx=prev.getContext('2d');
+    cx.fillStyle='#fff'; cx.fillRect(0,0,prev.width,prev.height);
+    cx.save(); if(mirEl.checked){ cx.translate(prev.width,0); cx.scale(-1,1); }
+    const ix=mirEl.checked?(L.pw-L.ix-L.iw):L.ix;
+    cx.drawImage(img,ix*k,L.iy*k,L.iw*k,L.ih*k); cx.restore();
+    cx.setLineDash(cutEl.checked?[]:[4,3]); cx.strokeStyle=cutEl.checked?'#000':'rgba(200,0,0,0.6)'; cx.lineWidth=1;
+    cx.strokeRect(L.bx*k+0.5,L.by*k+0.5,L.bw*k,L.bh*k);
+    const paperName=`${r2(L.pw)} × ${r2(L.ph)} in paper`;
+    info.innerHTML=`Prints at <b>${r2(L.bw)} × ${r2(L.bh)} in</b> on ${paperName}.`+(L.tooBig?' <span style="color:var(--red)">Too big for this paper — pick a bigger paper or Auto.</span>':'')+(!keepEl.checked&&Math.abs(L.bw/L.bh-img.naturalWidth/img.naturalHeight)>0.02?' <span style="color:var(--muted)">(picture is stretched to fill)</span>':'');
+  }
+  function fileBase(L){ return (imgName.replace(/\.[^.]+$/,'')||'image')+`-${r2(L.bw)}x${r2(L.bh)}in`+(mirEl.checked?'-mirrored':''); }
+  function savePdf(){
+    if(!img) return;
+    const L=layout(); if(L.tooBig && !confirm('This is bigger than the paper and will get cut off. Save anyway?')) return;
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:L.pw>L.ph?'landscape':'portrait',unit:'in',format:[L.pw,L.ph],compress:true,precision:4});
+    const c=printCanvas(L);
+    const ix=mirEl.checked?(L.pw-L.ix-L.iw):L.ix;
+    pdf.addImage(c.toDataURL('image/png'),'PNG',ix,L.iy,L.iw,L.ih,undefined,'FAST');
+    if(cutEl.checked){ pdf.setDrawColor(0); pdf.setLineWidth(0.005); pdf.rect(L.bx,L.by,L.bw,L.bh); }
+    pdf.save(fileBase(L)+'.pdf');
+  }
+  function printNow(){
+    if(!img) return;
+    const L=layout(); if(L.tooBig && !confirm('This is bigger than the paper and will get cut off. Print anyway?')) return;
+    const url=printCanvas(L).toDataURL('image/png');
+    const ix=mirEl.checked?(L.pw-L.ix-L.iw):L.ix;
+    const fr=document.createElement('iframe');
+    fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    document.body.appendChild(fr);
+    const d=fr.contentDocument;
+    d.open(); d.write(`<!DOCTYPE html><html><head><title>${fileBase(L)}</title><style>@page{size:${L.pw}in ${L.ph}in;margin:0}html,body{margin:0;padding:0}body{width:${L.pw}in;height:${L.ph}in;position:relative;overflow:hidden}img{position:absolute;left:${ix}in;top:${L.iy}in;width:${L.iw}in;height:${L.ih}in}.cut{position:absolute;left:${L.bx}in;top:${L.by}in;width:${L.bw}in;height:${L.bh}in;box-sizing:border-box;border:0.5pt solid #000}</style></head><body><img src="${url}">${cutEl.checked?'<div class="cut"></div>':''}</body></html>`); d.close();
+    const go=()=>{ fr.contentWindow.focus(); fr.contentWindow.print(); setTimeout(()=>fr.remove(),60000); };
+    const im=d.querySelector('img'); if(im.complete) setTimeout(go,100); else im.onload=()=>setTimeout(go,100);
+  }
+  input.addEventListener('change',e=>{
+    const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    imgName=f.name||'image';
+    const r=new FileReader();
+    r.onload=()=>{ const im=new Image(); im.onload=()=>{ img=im; panel.style.display='block';
+      if(!wEl.value){ wEl.value=r2(Math.min(8,im.naturalWidth/300)); hEl.value=r2(wEl.value*im.naturalHeight/im.naturalWidth); }
+      draw(); }; im.onerror=()=>alert('That image could not be opened.'); im.src=r.result; };
+    r.readAsDataURL(f);
+  });
+  wEl.addEventListener('input',()=>{ if(lockEl.checked&&img&&parseFloat(wEl.value)) hEl.value=r2(wEl.value*img.naturalHeight/img.naturalWidth); draw(); });
+  hEl.addEventListener('input',()=>{ if(lockEl.checked&&img&&parseFloat(hEl.value)) wEl.value=r2(hEl.value*img.naturalWidth/img.naturalHeight); draw(); });
+  [sizeSel,paperSel,keepEl,mirEl,cutEl].forEach(el=>el.addEventListener('change',draw));
+  $('piPdfBtn').addEventListener('click',savePdf);
+  $('piPrintBtn').addEventListener('click',printNow);
 })();
 (function(){
   const ls=document.getElementById('letterSize'), pq=document.getElementById('pngCellSize');
