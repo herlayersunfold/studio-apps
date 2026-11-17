@@ -529,7 +529,7 @@ body.dock-on .cleanup-panel{top:96px;bottom:84px;max-height:none;right:10px;widt
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17d</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17e</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -6671,6 +6671,13 @@ function regionsRoughlyMatch(a,b){
 }
 
 function doExportCroppedPhoto(region){
+  // Same name pop-up as the PDF and shopping list. Cancel = don't export.
+  let defName='Cropped Photo';
+  try{ const [wIn,hIn]=getCanvasSizeIn(); defName=defaultExportTitle(wIn,hIn); }catch(e){}
+  const nameIn=prompt('Enter a name for the cropped photo:', defName);
+  if(nameIn===null) return;
+  const photoName=(withShoppingPrefix(String(nameIn).trim()||defName)
+    .replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim().slice(0,80))||'Cropped Photo';
   const sx=Math.max(0,Math.round(region.x*sourceImage.width));
   const sy=Math.max(0,Math.round(region.y*sourceImage.height));
   const sw=Math.max(1,Math.min(sourceImage.width-sx,Math.round(region.w*sourceImage.width)));
@@ -6683,7 +6690,7 @@ function doExportCroppedPhoto(region){
     if(!blob){ alert('Could not export that crop.'); return; }
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download=`${fileNamePrefix()}cropped-photo.png`;
+    a.download=`${photoName}.png`;
     a.click();
   });
 }
