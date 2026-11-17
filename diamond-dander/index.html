@@ -511,7 +511,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-15b</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-16a</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -7419,6 +7419,29 @@ function sampleColorFromCanvasClick(e){
 }
 PHOTO_PICKER_CANVAS_IDS.forEach(id=>{
   document.getElementById(id)?.addEventListener('click',sampleColorFromCanvasClick,true);
+});
+// iPad / touch screens: the photo's pan & pinch handling blocks the normal
+// tap "click", so the color picker never heard the tap. While the picker is
+// on, a finger tap samples the color directly (and the photo holds still).
+PHOTO_PICKER_CANVAS_IDS.forEach(id=>{
+  const cv=document.getElementById(id); if(!cv) return;
+  let t0=null;
+  cv.addEventListener('touchstart',e=>{
+    if(!syncPhotoPickerActive||e.touches.length!==1){ t0=null; return; }
+    const t=e.touches[0]; t0={x:t.clientX,y:t.clientY};
+    e.preventDefault(); e.stopPropagation();
+  },{capture:true,passive:false});
+  cv.addEventListener('touchmove',e=>{
+    if(!syncPhotoPickerActive||!t0) return;
+    e.preventDefault(); e.stopPropagation();
+  },{capture:true,passive:false});
+  cv.addEventListener('touchend',e=>{
+    if(!syncPhotoPickerActive||!t0) return;
+    const t=e.changedTouches[0]; const moved=Math.hypot(t.clientX-t0.x,t.clientY-t0.y); t0=null;
+    e.preventDefault(); e.stopPropagation();
+    if(moved>14) return;
+    sampleColorFromCanvasClick({currentTarget:cv,clientX:t.clientX,clientY:t.clientY});
+  },{capture:true,passive:false});
 });
 
 // ── PICK A BOX FROM PHOTO ─────────────────────────────────────────────────────
