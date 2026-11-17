@@ -496,6 +496,12 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 .sel-mode-row{display:flex;gap:0.25rem;margin:0.15rem 0 0.35rem}
 .sel-mode-btn{flex:1;font-size:0.72rem;font-weight:700;padding:0.4rem 0.2rem;border:1px solid var(--border-strong);background:#fff;color:var(--red);border-radius:6px;cursor:pointer;font-family:inherit}
 .sel-mode-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* Change Size or Drill Shape */
+.rz-label{font-size:0.66rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin:0.2rem 0 0.25rem}
+.rz-row{display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.45rem}
+.rz-chip{font-size:0.72rem;font-weight:700;padding:0.38rem 0.55rem;border:1px solid var(--border-strong);background:#fff;color:var(--red);border-radius:6px;cursor:pointer;font-family:inherit}
+.rz-chip.active{background:var(--red);color:#fff;border-color:var(--red)}
 </style>
 </head>
 <body>
@@ -516,7 +522,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17a</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17b</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -539,8 +545,8 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 
   <div class="sb-section" id="importDesignSection">
     <div class="sec-label">Import Finished Design</div>
-    <div class="small-note" style="margin-bottom:0.5rem">Already made the design somewhere else, like Dotterly? Drop in its PNG, even without symbols and even with round dots. The Studio reads one color per drill, turns each dot into a square box, matches it to your colors and adds the letters. No redesigning.</div>
-    <label class="btn btn-out" style="display:block;text-align:center;cursor:pointer;margin-bottom:0.4rem">📥 Choose finished design PNG<input type="file" id="importDesignInput" accept="image/*" style="display:none"></label>
+    <div class="small-note" style="margin-bottom:0.5rem">Already made the design somewhere else, like Dotterly? Drop in its PNG (even without symbols, even with round dots) or its pattern PDF — a PDF brings the exact DMC numbers. The Studio reads one color per drill, turns each dot into a square box, matches it to your colors and adds the letters. No redesigning.</div>
+    <label class="btn btn-out" style="display:block;text-align:center;cursor:pointer;margin-bottom:0.4rem">📥 Choose finished design PNG or Dotterly PDF<input type="file" id="importDesignInput" accept="image/*,application/pdf,.pdf" style="display:none"></label>
     <div id="importDesignPanel" style="display:none">
       <canvas id="importDesignPreview" style="width:100%;border:1px solid var(--border-strong);border-radius:4px;background:#fff;display:block;margin-bottom:0.4rem"></canvas>
       <div class="small-note" id="importDesignStatus" style="margin-bottom:0.4rem"></div>
@@ -571,6 +577,46 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
           <button type="button" class="btn btn-out btn-sm" id="wmRemoveCopy" style="flex:1">✕ Remove this one</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="sb-section" id="regridSection">
+    <div class="sec-label">Change Size or Drill Shape</div>
+    <div class="small-note" style="margin-bottom:0.45rem">Turn the pattern on the canvas into round or square drills, or a different canvas size — no redesigning. The Studio re-grids your colors; fine lines or letters may need a quick Multi-Cell touch-up.</div>
+    <div class="small-note" id="rzNow" style="margin-bottom:0.45rem">Make or import a pattern first.</div>
+    <div class="rz-label">Drills</div>
+    <div class="rz-row" id="rzDrillRow">
+      <button type="button" class="rz-chip" data-mm="2.8">● Round 2.8mm</button>
+      <button type="button" class="rz-chip" data-mm="2.5">■ Square 2.5mm</button>
+    </div>
+    <div class="rz-label">Size</div>
+    <div class="rz-row" id="rzSizeRow">
+      <button type="button" class="rz-chip" data-size="same">Same canvas size</button>
+      <button type="button" class="rz-chip" data-size="count">Same drill count</button>
+      <button type="button" class="rz-chip" data-size="22x60">22×60</button>
+      <button type="button" class="rz-chip" data-size="18x24">18×24</button>
+      <button type="button" class="rz-chip" data-size="22x36">22×36</button>
+      <button type="button" class="rz-chip" data-size="16x20">16×20</button>
+      <button type="button" class="rz-chip" data-size="12x12">12×12</button>
+      <button type="button" class="rz-chip" data-size="custom">Custom</button>
+      <button type="button" class="rz-chip rz-flip" id="rzFlip" title="Swap width and height">⇄ Flip</button>
+    </div>
+    <div id="rzCustomRow" style="display:none;gap:0.3rem;align-items:center;font-size:0.72rem;margin-bottom:0.4rem;flex-wrap:wrap">
+      <input type="number" id="rzW" min="1" step="0.1" style="width:4.2rem"> × <input type="number" id="rzH" min="1" step="0.1" style="width:4.2rem">
+      <select id="rzUnit" style="font-size:0.72rem"><option value="in">inches</option><option value="drills">drills</option></select>
+    </div>
+    <div id="rzShapeRow" style="display:none;margin-bottom:0.4rem">
+      <div class="rz-label" style="color:var(--red)">Different shape than your design — choose:</div>
+      <div class="rz-row">
+        <button type="button" class="rz-chip" data-shape="fit">Fit inside + border</button>
+        <button type="button" class="rz-chip" data-shape="stretch">Stretch to fill</button>
+      </div>
+      <div id="rzBorderRow" style="display:none;font-size:0.72rem;margin-top:0.3rem">Border color <select id="rzBorder" style="max-width:100%;font-size:0.72rem"></select></div>
+    </div>
+    <div class="small-note" id="rzNew" style="margin-bottom:0.45rem"></div>
+    <div style="display:flex;gap:0.4rem">
+      <button type="button" class="btn" id="rzApply" style="flex:2" disabled>✓ Apply</button>
+      <button type="button" class="btn btn-out" id="rzUndo" style="flex:1" disabled title="Put the pattern back the way it was before the last change here">↶ Undo</button>
     </div>
   </div>
 
@@ -12776,7 +12822,7 @@ updateCollapseButtons();
     cx.stroke();
     const tum=Object.entries(TUMBLER_GRIDS).find(([k,[w,h]])=>w===result.cols&&h===result.rows);
     const tumName={tumbler3:'3oz',tumbler12:'12oz',tumbler20:'20oz',tumbler30:'30oz'};
-    statusEl.innerHTML=`Found <b>${result.cols} × ${result.rows}</b> drills (${(result.cols*result.rows).toLocaleString()} total)${tum?` — matches your <b>${tumName[tum[0]]} tumbler</b> size`:''}. <b>${result.clusters.length}</b> colors.`+(result.blanks?` ${result.blanks} blank spot(s) filled with the main color.`:'')+(result.clusters.length>60?' <span style="color:var(--red)">That is a lot of colors — this looks more like a photo than a finished pattern. For photos use Upload Photo below.</span>':'');
+    statusEl.innerHTML=`Found <b>${result.cols} × ${result.rows}</b> drills (${(result.cols*result.rows).toLocaleString()} total)${tum?` — matches your <b>${tumName[tum[0]]} tumbler</b> size`:''}. <b>${result.clusters.length}</b> colors.`+(result.blanks?` ${result.blanks} blank spot(s) filled with the main color.`:'')+(result.clusters.length>60&&!result.fromPdf?' <span style="color:var(--red)">That is a lot of colors — this looks more like a photo than a finished pattern. For photos use Upload Photo below.</span>':'');
   }
 
   function showColors(){
@@ -12825,13 +12871,13 @@ updateCollapseButtons();
     const finalMatch=codes.map(c=>entryOf[c]);
     const sr={}; codes.forEach((c,i)=>{ sr[i]=i; });
     const tum=Object.entries(TUMBLER_GRIDS).find(([k,[w,h]])=>w===cols&&h===rows);
-    const useTumbler=!!(tum && drillMM===2.8);
+    const useTumbler=!!(tum && (result.drillMM||drillMM)===2.8);
     // No photo is kept: Generate Canvas would re-read an old photo and replace the import.
     sourceImage=null;
     try{ document.getElementById('cropZone').style.display='none'; uploadZone.style.display=''; }catch(e){}
     restoreProject({
       app:'diamond-art-studio', version:1, image:null,
-      settings:{ sizePreset:useTumbler?tum[0]:'custom', custWDrills:String(cols), custHDrills:String(rows), customUnitMode:'drills', drillMM:drillMM, mixedStone:mixedStone, mirrorMode:'none' },
+      settings:{ sizePreset:useTumbler?tum[0]:'custom', custWDrills:String(cols), custHDrills:String(rows), customUnitMode:'drills', drillMM:result.drillMM||drillMM, mixedStone:mixedStone, mirrorMode:'none' },
       appMode, uiMode, restrictPaletteEnabled, restrictedCodes:[...restrictedCodes],
       grid:{gridW:cols,gridH:rows},
       palette:finalMatch.map(m=>hexToRgb(m.hex)),
@@ -12843,8 +12889,111 @@ updateCollapseButtons();
     statusEl.innerHTML+=' <b style="color:#0a7a2a">✓ Built — it is on the canvas now. Save it to your projects so you have it.</b>';
   }
 
-  input.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; loadFile(f); });
-  document.getElementById('importDesignRecheck').addEventListener('click',()=>{ if(img) readGrid(); });
+
+  // ── Dotterly pattern PDF ──────────────────────────────────────────────────
+  // Reads the cover (pattern size, drill size), the chart page (one colored
+  // square per drill, a symbol on each) and the color key (symbol → DMC code
+  // with a colored swatch). Every drill gets the EXACT code from the key.
+  const PDFJS_URLS=['https://herlayersunfold.github.io/studio-apps/vendor/pdfjs/','https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/'];
+  let pdfjsLib=null;
+  async function getPdfjs(){
+    if(pdfjsLib) return pdfjsLib;
+    let lastErr=null;
+    for(const base of PDFJS_URLS){
+      try{ const m=await import(base+'pdf.min.mjs'); m.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.mjs'; pdfjsLib=m; return m; }catch(e){ lastErr=e; }
+    }
+    throw lastErr||new Error('PDF reader could not load');
+  }
+  function catalogEntry(code){
+    const c=String(code).trim();
+    const tries=[c, c.replace(/^D(?=\w)/i,''), c.replace(/^DMC\s*/i,'')];
+    for(const t of tries){
+      const e=DMC_ENTRIES.find(x=>String(x.code).toLowerCase()===t.toLowerCase()); if(e) return e;
+      const k=Object.keys(DMC_DIAMOND).find(x=>x.toLowerCase()===t.toLowerCase());
+      if(k){ const v=DMC_DIAMOND[k]; return {code:k,name:v.n,hex:v.h,rgb:hexToRgb(v.h),catalogType:'diamond'}; }
+    }
+    return null;
+  }
+  async function loadPdf(file){
+    statusEl.textContent='Reading the PDF…'; panel.style.display='block';
+    let lib;
+    try{ lib=await getPdfjs(); }catch(e){ alert('The PDF reader needs the internet the first time. Connect and try again.'); return; }
+    const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+    const pages=[]; for(let i=1;i<=doc.numPages;i++){ const pg=await doc.getPage(i); pages.push({pg,text:(await pg.getTextContent()).items.filter(t=>t.str&&t.str.trim())}); }
+    const all=pages.map(p=>p.text.map(t=>t.str).join(' ')).join(' ');
+    const ms=all.match(/Pattern size:\s*(\d+)\s*x\s*(\d+)/i);
+    const md=all.match(/Drill size:\s*([\d.]+)\s*mm/i);
+    if(!ms){ alert('This PDF doesn\'t look like a Dotterly pattern (no "Pattern size" found).'); return; }
+    const cols=+ms[1], rows=+ms[2], fileMM=md?parseFloat(md[1]):drillMM;
+    // Color key: on "Count:" pages, a short symbol followed 4–14pt to the right by its code on the same line.
+    const legend=[];
+    for(const p of pages){
+      if(!p.text.some(t=>/^Count:/i.test(t.str.trim()))) continue;
+      const items=p.text.map(t=>({s:t.str.trim(),x:t.transform[4],y:t.transform[5],w:t.width,h:Math.abs(t.transform[3])||t.height}));
+      // Each key entry: symbol (on the swatch), then code / name / "Count: n" stacked at the same x.
+      for(const cnt of items.filter(o=>/^Count:/i.test(o.s))){
+        const col=items.filter(o=>Math.abs(o.x-cnt.x)<0.8 && o.y>cnt.y+1 && o.y<cnt.y+14).sort((u,v)=>v.y-u.y);
+        const code=col[0]; if(!code) continue;
+        const sym=items.filter(o=>o.s.length<=3 && o.x<code.x-2 && o.x>code.x-14 && Math.abs(o.y-code.y)<5).sort((u,v)=>v.x-u.x)[0];
+        if(!sym) continue;
+        legend.push({sym:sym.s,code:code.s,page:p.pg,x:sym.x+sym.w/2,y:sym.y+sym.h*0.35});
+      }
+    }
+    if(!legend.length){ alert('Could not find the color key in this PDF.'); return; }
+    // Swatch colors: render each key page and read the circle around each symbol.
+    const S=4; const renders=new Map();
+    async function render(pg){ if(renders.has(pg)) return renders.get(pg); const vp=pg.getViewport({scale:S}); const c=document.createElement('canvas'); c.width=Math.ceil(vp.width); c.height=Math.ceil(vp.height); await pg.render({canvasContext:c.getContext('2d',{willReadFrequently:true}),viewport:vp}).promise; const r={c,vp,d:c.getContext('2d').getImageData(0,0,c.width,c.height).data}; renders.set(pg,r); return r; }
+    function modeColor(r,pts){ const cnt=new Map(); let best=null,bn=0; for(const [x,y] of pts){ const xi=Math.round(x),yi=Math.round(y); if(xi<0||yi<0||xi>=r.c.width||yi>=r.c.height) continue; const i=(yi*r.c.width+xi)*4; const k=r.d[i]+','+r.d[i+1]+','+r.d[i+2]; const n=(cnt.get(k)||0)+1; cnt.set(k,n); if(n>bn){bn=n;best=[r.d[i],r.d[i+1],r.d[i+2]];} } return best; }
+    for(const L of legend){
+      const r=await render(L.page); const [vx,vy]=r.vp.convertToViewportPoint(L.x,L.y);
+      const pts=[]; for(let k=0;k<16;k++){ const ang=k/16*Math.PI*2; for(const rad of [2.3,2.7]) pts.push([vx+Math.cos(ang)*rad*S,vy+Math.sin(ang)*rad*S]); }
+      L.rgb=modeColor(r,pts);
+    }
+    // Chart page: the page with the most key symbols on it.
+    const symSet=new Set(legend.map(l=>l.sym));
+    let chart=null,chartItems=[];
+    for(const p of pages){ const it=p.text.filter(t=>symSet.has(t.str.trim())); if(it.length>chartItems.length){ chart=p; chartItems=it; } }
+    if(!chart||chartItems.length<cols*rows*0.3){ alert('This PDF\'s chart is split across pages or too small to read. Export the one-page color chart from Dotterly and try again.'); return; }
+    const r=await render(chart.pg);
+    const cen=chartItems.map(t=>r.vp.convertToViewportPoint(t.transform[4]+t.width/2,t.transform[5]+(Math.abs(t.transform[3])||t.height)*0.35));
+    const xs=cen.map(c=>c[0]), ys=cen.map(c=>c[1]);
+    const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+    const px_=(x1-x0)/(cols-1), py_=(y1-y0)/(rows-1);
+    const keyRGB=legend.map(l=>l.rgb||[128,128,128]);
+    const cellCl=new Int32Array(cols*rows); const used=new Map();
+    for(let rr=0;rr<rows;rr++) for(let cc=0;cc<cols;cc++){
+      const cx=x0+cc*px_, cy=y0+rr*py_, ox=px_*0.38, oy=py_*0.38;
+      const col=modeColor(r,[[cx-ox,cy-oy],[cx+ox,cy-oy],[cx-ox,cy+oy],[cx+ox,cy+oy],[cx-ox,cy],[cx+ox,cy],[cx,cy-oy],[cx,cy+oy]])||[255,255,255];
+      let bi=0,bd=Infinity; for(let k=0;k<keyRGB.length;k++){ const d=colorDist(col,keyRGB[k]); if(d<bd){bd=d;bi=k;} }
+      cellCl[rr*cols+cc]=bi; used.set(bi,(used.get(bi)||0)+1);
+    }
+    // The symbol printed on each drill is the surest match — use it wherever it can be read.
+    const symIdx=new Map(legend.map((l,i)=>[l.sym,i]));
+    chartItems.forEach((t,i)=>{ const k=symIdx.get(t.str.trim()); if(k===undefined) return;
+      const cc=Math.round((cen[i][0]-x0)/px_), rr=Math.round((cen[i][1]-y0)/py_);
+      if(cc<0||rr<0||cc>=cols||rr>=rows) return;
+      const at=rr*cols+cc, old=cellCl[at]; if(old===k) return;
+      used.set(old,used.get(old)-1); if(!used.get(old)) used.delete(old);
+      cellCl[at]=k; used.set(k,(used.get(k)||0)+1);
+    });
+    // Only key colors that are actually on the chart; keep exact codes.
+    const keep=[...used.keys()]; const remap=new Map(keep.map((k,i)=>[k,i]));
+    const missing=[];
+    const clusters=keep.map(k=>({rgb:keyRGB[k],n:used.get(k)}));
+    const match=keep.map(k=>{ const e=catalogEntry(legend[k].code); if(e) return e; missing.push(legend[k].code); return findClosestDMC(...keyRGB[k]); });
+    for(let i=0;i<cellCl.length;i++) cellCl[i]=remap.get(cellCl[i]);
+    // Preview = the chart area of the rendered page.
+    img=r.c; W=r.c.width; H=r.c.height;
+    box={x:Math.max(0,Math.round(x0-px_/2)),y:Math.max(0,Math.round(y0-py_/2)),w:Math.round(px_*cols),h:Math.round(py_*rows)};
+    colsEl.value=cols; rowsEl.value=rows;
+    result={cols,rows,clusters,cellCl,match,blanks:0,drillMM:fileMM,fromPdf:true,title:(all.match(/^(.*?)\s+Pattern size:/i)||[])[1]||file.name};
+    drawPreview(); showColors();
+    statusEl.innerHTML+=` <b>Dotterly PDF</b>: exact DMC numbers from its color key, ${fileMM}mm drills.`+(missing.length?` <span style="color:var(--red)">Not in the Studio's colors (closest used): ${missing.join(', ')}</span>`:'');
+  }
+  input.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)) loadPdf(f).catch(err=>{ console.error(err); alert('Sorry — that PDF could not be read.'); });
+    else loadFile(f); });
+  document.getElementById('importDesignRecheck').addEventListener('click',()=>{ if(img && !(result&&result.fromPdf)) readGrid(); });
   buildBtn.addEventListener('click',build);
 })();
 
@@ -13063,6 +13212,109 @@ function addPdfWatermarks(pdf,x0,y0,w,h){
   [sizeSel,paperSel,keepEl,mirEl,cutEl].forEach(el=>el.addEventListener('change',draw));
   $('piPdfBtn').addEventListener('click',savePdf);
   $('piPrintBtn').addEventListener('click',printNow);
+})();
+
+// ── CHANGE SIZE OR DRILL SHAPE (re-grid the pattern on the canvas) ──────────
+// Round ↔ square drills (keeping the canvas size or the drill count) and
+// quick canvas sizes. Each new drill takes the color that covers most of its
+// area in the old grid, so solid areas and backgrounds stay clean.
+(function(){
+  const sec=document.getElementById('regridSection'); if(!sec) return;
+  const $=id=>document.getElementById(id);
+  let mm=null, size='same', flip=false, shape=null, before=null;
+  const r1=v=>Math.round(v*10)/10;
+  function regrid(src,sw,sh,dw,dh){
+    const out=new Array(dw*dh); const sx=sw/dw, sy=sh/dh; const acc=new Map();
+    for(let r=0;r<dh;r++){ const ya=r*sy, yb=(r+1)*sy;
+      for(let c=0;c<dw;c++){ const xa=c*sx, xb=(c+1)*sx; acc.clear(); let best=-1,bw=-1;
+        for(let y=Math.floor(ya);y<Math.min(sh,Math.ceil(yb));y++){ const wy=Math.min(yb,y+1)-Math.max(ya,y); if(wy<=0) continue;
+          for(let x=Math.floor(xa);x<Math.min(sw,Math.ceil(xb));x++){ const wx=Math.min(xb,x+1)-Math.max(xa,x); if(wx<=0) continue;
+            const k=src[y*sw+x]; const w=(acc.get(k)||0)+wx*wy; acc.set(k,w); if(w>bw){bw=w;best=k;} } }
+        out[r*dw+c]=best; } }
+    return out;
+  }
+  function target(){
+    if(!indices.length) return null;
+    const newMM=mm||drillMM, inW=gridW*drillMM/25.4, inH=gridH*drillMM/25.4;
+    let dw,dh;
+    if(size==='same'){ dw=Math.round(inW*25.4/newMM); dh=Math.round(inH*25.4/newMM); }
+    else if(size==='count'){ dw=gridW; dh=gridH; }
+    else if(size==='custom'){
+      const a=parseFloat($('rzW').value), b=parseFloat($('rzH').value); if(!(a>0&&b>0)) return null;
+      if($('rzUnit').value==='drills'){ dw=Math.round(a); dh=Math.round(b); } else { dw=Math.round(a*25.4/newMM); dh=Math.round(b*25.4/newMM); }
+    } else { let [a,b]=size.split('x').map(Number); if(flip) [a,b]=[b,a]; dw=Math.round(a*25.4/newMM); dh=Math.round(b*25.4/newMM); }
+    if(size!=='custom'&&size!=='same'&&size!=='count'){} 
+    dw=Math.max(5,Math.min(1200,dw)); dh=Math.max(5,Math.min(1200,dh));
+    const diff=Math.abs((dw/dh)/(gridW/gridH)-1)>0.02;
+    return {dw,dh,newMM,diff};
+  }
+  function borderOptions(){
+    const counts=getCurrentCounts(); const edge=new Map();
+    for(let c=0;c<gridW;c++){ [indices[c],indices[(gridH-1)*gridW+c]].forEach(i=>edge.set(i,(edge.get(i)||0)+1)); }
+    for(let r=0;r<gridH;r++){ [indices[r*gridW],indices[r*gridW+gridW-1]].forEach(i=>edge.set(i,(edge.get(i)||0)+1)); }
+    const sym=document.getElementById('symSet').value;
+    const items=palette.map((_,i)=>i).filter(i=>counts[i]>0).sort((a,b)=>(edge.get(b)||0)-(edge.get(a)||0));
+    const sel=$('rzBorder'); const keep=sel.value;
+    sel.innerHTML=items.map(i=>`<option value="${i}">${getSymbol(symbolRank[i],sym)} · ${dispCode(dmcMatches[i])} · ${dmcMatches[i].name}</option>`).join('');
+    if(keep&&items.includes(+keep)) sel.value=keep;
+  }
+  function refresh(){
+    const has=indices.length>0;
+    if(has&&mm===null) mm=drillMM;
+    const shapeName=m=>m===2.5?'square':(m===2.8?'round':m+'mm');
+    $('rzNow').innerHTML=has?`Now: <b>${gridW} × ${gridH}</b> drills · ${drillMM}mm ${shapeName(drillMM)} · ${r1(gridW*drillMM/25.4)} × ${r1(gridH*drillMM/25.4)} in`:'Make or import a pattern first.';
+    sec.querySelectorAll('[data-mm]').forEach(b=>b.classList.toggle('active',+b.dataset.mm===mm));
+    sec.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('active',b.dataset.size===size));
+    $('rzFlip').classList.toggle('active',flip);
+    sec.querySelectorAll('[data-size]').forEach(b=>{ const s=b.dataset.size; if(/^\d+x\d+$/.test(s)){ const [a,c]=s.split('x'); b.textContent=flip?`${c}×${a}`:`${a}×${c}`; } });
+    $('rzCustomRow').style.display=size==='custom'?'flex':'none';
+    const t=has?target():null;
+    $('rzShapeRow').style.display=t&&t.diff?'block':'none';
+    sec.querySelectorAll('[data-shape]').forEach(b=>b.classList.toggle('active',b.dataset.shape===shape));
+    $('rzBorderRow').style.display=t&&t.diff&&shape==='fit'?'block':'none';
+    if(t&&t.diff&&shape==='fit'&&!$('rzBorder').options.length) borderOptions();
+    const same=t&&t.dw===gridW&&t.dh===gridH&&t.newMM===drillMM;
+    const needShape=t&&t.diff&&!shape;
+    $('rzNew').innerHTML=!t?'':(same?'That\'s the size it already is.':`New: <b>${t.dw} × ${t.dh}</b> drills · ${t.newMM}mm ${shapeName(t.newMM)} · ${r1(t.dw*t.newMM/25.4)} × ${r1(t.dh*t.newMM/25.4)} in · ${(t.dw*t.dh).toLocaleString()} drills`+(needShape?' — <span style="color:var(--red)">pick Fit or Stretch</span>':''));
+    $('rzApply').disabled=!t||same||needShape;
+    $('rzUndo').disabled=!before;
+  }
+  function apply(){
+    const t=target(); if(!t) return;
+    const snap=JSON.parse(JSON.stringify(buildProjectData()));
+    let out;
+    if(t.diff&&shape==='fit'){
+      const s=Math.min(t.dw/gridW,t.dh/gridH), iw=Math.max(1,Math.round(gridW*s)), ih=Math.max(1,Math.round(gridH*s));
+      const inner=regrid(indices,gridW,gridH,iw,ih); const bg=parseInt($('rzBorder').value)||indices[0];
+      out=new Array(t.dw*t.dh).fill(bg); const ox=Math.floor((t.dw-iw)/2), oy=Math.floor((t.dh-ih)/2);
+      for(let r=0;r<ih;r++) for(let c=0;c<iw;c++) out[(r+oy)*t.dw+c+ox]=inner[r*iw+c];
+    } else out=regrid(indices,gridW,gridH,t.dw,t.dh);
+    const data=JSON.parse(JSON.stringify(snap));
+    data.grid={gridW:t.dw,gridH:t.dh}; data.indices=out;
+    Object.assign(data.settings,{sizePreset:'custom',customUnitMode:'drills',custWDrills:String(t.dw),custHDrills:String(t.dh),custW:String(r1(t.dw*t.newMM/25.4)),custH:String(r1(t.dh*t.newMM/25.4)),drillMM:t.newMM,mirrorMode:'none'});
+    // Drill-by-drill extras don't line up with a new grid, so they start fresh.
+    data.hiddenColors=[]; data.hiddenColorCells={}; data.scatterCells=[]; data.currentPatternPhotoRegion=null; data.voiceNotes=snap.voiceNotes;
+    restoreProject(data);
+    before=snap; mm=t.newMM; size='count'; shape=null; $('rzBorder').innerHTML='';
+    if(window.__wmRedraw) window.__wmRedraw();
+    refresh();
+    $('rzNew').innerHTML='<b style="color:#0a7a2a">✓ Done.</b> Check fine details, then save it to your projects (as a new name if you want to keep the original).';
+  }
+  sec.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b||!sec.contains(b)) return;
+    if(b.dataset.mm){ mm=+b.dataset.mm; }
+    else if(b.dataset.size){ size=b.dataset.size; shape=null; $('rzBorder').innerHTML=''; if(size==='custom'&&!$('rzW').value&&indices.length){ $('rzW').value=r1(gridW*drillMM/25.4); $('rzH').value=r1(gridH*drillMM/25.4); } }
+    else if(b.id==='rzFlip'){ flip=!flip; shape=null; if(size==='custom'){ const a=$('rzW').value; $('rzW').value=$('rzH').value; $('rzH').value=a; } }
+    else if(b.dataset.shape){ shape=b.dataset.shape; if(shape==='fit') borderOptions(); }
+    else if(b.id==='rzApply'){ apply(); return; }
+    else if(b.id==='rzUndo'){ if(before){ restoreProject(before); before=null; mm=drillMM; size='same'; shape=null; if(window.__wmRedraw) window.__wmRedraw(); refresh(); } return; }
+    refresh();
+  });
+  ['rzW','rzH','rzUnit'].forEach(id=>$(id).addEventListener('input',()=>{ shape=null; refresh(); }));
+  // Keep the "Now" line current whenever a pattern is made, imported or loaded.
+  let lastKey='';
+  setInterval(()=>{ const k=indices.length+':'+gridW+'x'+gridH+':'+drillMM; if(k!==lastKey){ lastKey=k; if(!before||!indices.length) mm=indices.length?drillMM:null; refresh(); } },800);
+  refresh();
 })();
 (function(){
   const ls=document.getElementById('letterSize'), pq=document.getElementById('pngCellSize');
