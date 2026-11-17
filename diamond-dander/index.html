@@ -502,6 +502,13 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 .rz-row{display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.45rem}
 .rz-chip{font-size:0.72rem;font-weight:700;padding:0.38rem 0.55rem;border:1px solid var(--border-strong);background:#fff;color:var(--red);border-radius:6px;cursor:pointer;font-family:inherit}
 .rz-chip.active{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* Final Cleanup: sits on the right side (not over the middle of the pattern or other panels) */
+.cleanup-panel{left:auto;right:14px;top:110px;bottom:auto;transform:none;max-height:calc(100vh - 130px);overflow-y:auto}
+body.dock-on .cleanup-panel{top:96px;bottom:84px;max-height:none;right:10px;width:310px}
+.cup-row{flex-shrink:0;cursor:pointer}
+.cup-row.cup-showing{outline:2.5px solid #f5b400;outline-offset:1px}
+#cupBlink{position:absolute;pointer-events:none;z-index:5}
 </style>
 </head>
 <body>
@@ -522,7 +529,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17c</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17d</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -6027,6 +6034,7 @@ function exitCleanupMode(){
   modeCleanupBtn.classList.remove('active');
   modeCopyPasteBtn.classList.remove('active');
   cleanupPanel.classList.remove('visible');
+  if(window.__cupBlinkStop) window.__cupBlinkStop();
   cleanupResults=[];
   if(typeof updatePhotoPaneVisibility==='function') updatePhotoPaneVisibility();
 }
@@ -6049,6 +6057,7 @@ modeCleanupBtn.addEventListener('click',()=>{
   modeCopyPasteBtn.classList.remove('active');
   diamondCanvas.style.cursor='cell';
   cleanupPanel.classList.add('visible');
+  if(window.__dock&&window.__dock.on){ ['photo','colors','menu'].forEach(n=>{ if(window.__dock.state[n]) window.__dock.toggle(n); }); }
   cleanupResults=[];
   renderCleanupResults();
   updateCleanupPanel();
@@ -6167,7 +6176,41 @@ function analyzeCleanup(){
   return results;
 }
 
+function cupBlink(keys,row){
+  const parent=diamondCanvas.parentElement;
+  if(getComputedStyle(parent).position==='static') parent.style.position='relative';
+  let ov=document.getElementById('cupBlink');
+  if(!ov){ ov=document.createElement('canvas'); ov.id='cupBlink'; parent.appendChild(ov); }
+  ov.width=diamondCanvas.width; ov.height=diamondCanvas.height;
+  ov.style.left=diamondCanvas.offsetLeft+'px'; ov.style.top=diamondCanvas.offsetTop+'px';
+  ov.style.width=diamondCanvas.offsetWidth+'px'; ov.style.height=diamondCanvas.offsetHeight+'px';
+  ov.style.display='block';
+  const cellPx=parseInt(document.getElementById('cellSize').value), gap=1;
+  const scrRatio=diamondCanvas.getBoundingClientRect().width/Math.max(1,diamondCanvas.width); // screen px per canvas px (zoom included)
+  const scale=1/Math.max(0.01,scrRatio);
+  const ring=Math.max(cellPx*1.6,16*scale);
+  const ctx=ov.getContext('2d'); let on=true, n=0;
+  function draw(){
+    ctx.clearRect(0,0,ov.width,ov.height);
+    if(!on) return;
+    keys.forEach(k=>{ const r=Math.floor(k/gridW), c=k%gridW; const x=c*(cellPx+gap)+gap, y=r*(cellPx+gap)+gap;
+      ctx.fillStyle='rgba(255,214,0,0.55)'; ctx.fillRect(x,y,cellPx,cellPx);
+      ctx.lineWidth=Math.max(2,3*scale); ctx.strokeStyle='#111'; ctx.beginPath(); ctx.arc(x+cellPx/2,y+cellPx/2,ring,0,Math.PI*2); ctx.stroke();
+      ctx.lineWidth=Math.max(1.5,2*scale); ctx.strokeStyle='#ffd600'; ctx.beginPath(); ctx.arc(x+cellPx/2,y+cellPx/2,ring-Math.max(2,3*scale),0,Math.PI*2); ctx.stroke(); });
+  }
+  draw();
+  // Bring the first one into view.
+  if(keys.length){ const area=document.querySelector('.canvas-area'); if(area){ const k=keys[0], r=Math.floor(k/gridW), c=k%gridW;
+    const ar=area.getBoundingClientRect(), cr=diamondCanvas.getBoundingClientRect();
+    const vx=cr.left+(c*(cellPx+gap))*scrRatio, vy=cr.top+(r*(cellPx+gap))*scrRatio;
+    if(vx<ar.left+20||vx>ar.right-20) area.scrollLeft+=vx-(ar.left+ar.width/2);
+    if(vy<ar.top+20||vy>ar.bottom-20) area.scrollTop+=vy-(ar.top+ar.height/2); } }
+  const t=setInterval(()=>{ on=!on; draw(); if(++n>=40){ window.__cupBlinkStop(); } },450);
+  window.__cupBlinkStop=()=>{ clearInterval(t); ctx.clearRect(0,0,ov.width,ov.height); ov.style.display='none'; document.querySelectorAll('.cup-row.cup-showing').forEach(x=>x.classList.remove('cup-showing')); window.__cupBlinkStop=null; };
+}
+
 function renderCleanupResults(){
+  if(window.__cupBlinkStop) window.__cupBlinkStop();
   if(!cleanupResults.length){
     cupResultsEl.innerHTML='<div class="cup-empty">'+(selectedCells.size?'No stray colors detected at this threshold — try raising the % if you expected some.':'Drag a rectangle over a section of the canvas, then click Detect.')+'</div>';
     cupApplyAllBtn.disabled=true;
@@ -6193,8 +6236,22 @@ function renderCleanupResults(){
     cupResultsEl.appendChild(row);
   });
   cupResultsEl.querySelectorAll('.cup-row-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>applyCleanupResult(parseInt(btn.dataset.i,10)));
+    btn.addEventListener('click',e=>{ e.stopPropagation(); if(window.__cupBlinkStop) window.__cupBlinkStop(); applyCleanupResult(parseInt(btn.dataset.i,10)); });
   });
+  // Tap a row: those drills blink on the pattern so you can see them before fixing.
+  [...cupResultsEl.querySelectorAll('.cup-row')].forEach((row,i)=>{
+    const r=cleanupResults[i]; if(!r) return;
+    row.title='Tap to see these drills on the pattern';
+    row.addEventListener('click',()=>{
+      const wasOn=row.classList.contains('cup-showing');
+      if(window.__cupBlinkStop) window.__cupBlinkStop();
+      if(wasOn) return;
+      const keys=[...selectedCells].filter(k=>indices[k]===r.strayIdx&&!scatterCells.has(k));
+      row.classList.add('cup-showing');
+      cupBlink(keys,row);
+    });
+  });
+  if(!document.getElementById('cupTapHint')){ const h=document.createElement('div'); h.id='cupTapHint'; h.className='small-note'; h.style.cssText='font-size:0.66rem;margin-top:-0.15rem'; h.textContent='Tip: tap a color row to make those drills blink on the pattern.'; cupResultsEl.parentNode.insertBefore(h,cupResultsEl); }
   cupApplyAllBtn.disabled=!cleanupHasFixes();
 }
 
