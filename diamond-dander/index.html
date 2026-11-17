@@ -522,7 +522,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17b</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17c</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -12932,11 +12932,16 @@ updateCollapseButtons();
       const items=p.text.map(t=>({s:t.str.trim(),x:t.transform[4],y:t.transform[5],w:t.width,h:Math.abs(t.transform[3])||t.height}));
       // Each key entry: symbol (on the swatch), then code / name / "Count: n" stacked at the same x.
       for(const cnt of items.filter(o=>/^Count:/i.test(o.s))){
-        const col=items.filter(o=>Math.abs(o.x-cnt.x)<0.8 && o.y>cnt.y+1 && o.y<cnt.y+14).sort((u,v)=>v.y-u.y);
-        const code=col[0]; if(!code) continue;
-        const sym=items.filter(o=>o.s.length<=3 && o.x<code.x-2 && o.x>code.x-14 && Math.abs(o.y-code.y)<5).sort((u,v)=>v.x-u.x)[0];
-        if(!sym) continue;
-        legend.push({sym:sym.s,code:code.s,page:p.pg,x:sym.x+sym.w/2,y:sym.y+sym.h*0.35});
+        // Code = the line above "Count" (same x) that has the swatch symbol just to its left.
+        const symNear=o=>items.filter(q=>q.s.length<=3 && !/^Count/i.test(q.s) && q.x<o.x-1 && q.x>o.x-24 && Math.abs(q.y-o.y)<9).sort((u,v)=>v.x-u.x)[0];
+        // Stay inside this entry: stop at the next "Count" above in the same column.
+        const top=Math.min(cnt.y+40,...items.filter(o=>/^Count/i.test(o.s)&&Math.abs(o.x-cnt.x)<0.8&&o.y>cnt.y+1).map(o=>o.y-0.5));
+        const col=items.filter(o=>Math.abs(o.x-cnt.x)<0.8 && o.y>cnt.y+1 && o.y<top && !/^Count/i.test(o.s)).sort((u,v)=>v.y-u.y);
+        const looksCode=o=>/\d/.test(o.s)||/^D?(BLANC|ECRU|WHITE)$/i.test(o.s);
+        let code=null,sym=null;
+        for(const o of col){ if(!looksCode(o)) continue; const sn=symNear(o); if(sn){ code=o; sym=sn; break; } }
+        if(!code||!sym) continue;
+        legend.push({sym:sym.s,code:code.s,page:p.pg,x:sym.x+sym.w/2,y:sym.y+sym.h*0.35,h:sym.h});
       }
     }
     if(!legend.length){ alert('Could not find the color key in this PDF.'); return; }
@@ -12946,7 +12951,7 @@ updateCollapseButtons();
     function modeColor(r,pts){ const cnt=new Map(); let best=null,bn=0; for(const [x,y] of pts){ const xi=Math.round(x),yi=Math.round(y); if(xi<0||yi<0||xi>=r.c.width||yi>=r.c.height) continue; const i=(yi*r.c.width+xi)*4; const k=r.d[i]+','+r.d[i+1]+','+r.d[i+2]; const n=(cnt.get(k)||0)+1; cnt.set(k,n); if(n>bn){bn=n;best=[r.d[i],r.d[i+1],r.d[i+2]];} } return best; }
     for(const L of legend){
       const r=await render(L.page); const [vx,vy]=r.vp.convertToViewportPoint(L.x,L.y);
-      const pts=[]; for(let k=0;k<16;k++){ const ang=k/16*Math.PI*2; for(const rad of [2.3,2.7]) pts.push([vx+Math.cos(ang)*rad*S,vy+Math.sin(ang)*rad*S]); }
+      const pts=[]; for(let k=0;k<16;k++){ const ang=k/16*Math.PI*2; for(const rad of [Math.max(2.3,(L.h||4)*0.58),Math.max(2.7,(L.h||4)*0.68)]) pts.push([vx+Math.cos(ang)*rad*S,vy+Math.sin(ang)*rad*S]); }
       L.rgb=modeColor(r,pts);
     }
     // Chart page: the page with the most key symbols on it.
