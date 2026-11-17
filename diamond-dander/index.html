@@ -491,6 +491,11 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
 .mode-switch-btn.active{background:var(--red);color:#fff}
 .mode-switch-btn:hover:not(.active){background:var(--red-bg)}
 
+
+/* Selection mode buttons (New / Add / Remove) in the Multi-Cell panel */
+.sel-mode-row{display:flex;gap:0.25rem;margin:0.15rem 0 0.35rem}
+.sel-mode-btn{flex:1;font-size:0.72rem;font-weight:700;padding:0.4rem 0.2rem;border:1px solid var(--border-strong);background:#fff;color:var(--red);border-radius:6px;cursor:pointer;font-family:inherit}
+.sel-mode-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
 </style>
 </head>
 <body>
@@ -511,7 +516,7 @@ body.sticky-mode .canvas-area{overflow-y:visible;overflow-x:auto}
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-16a</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17a</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -1836,7 +1841,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <button class="mp-btn" id="mpMarkScatter" disabled title="Blanks out the selected cells — no color, no drill map. Fill that area by hand with a mixed-size filler pack instead of following a stone-by-stone guide.">⬜ Mark as Scatter</button>
     <button class="mp-btn" id="mpUnmarkScatter" disabled title="Restores whichever color the selected cells last had before being marked as scatter">↺ Un-mark Scatter</button>
   </div>
-  <div class="mp-hint" id="mpHint">Drag a rectangle to select · hold Shift to add another · hold Alt to subtract</div>
+  <div class="sel-mode-row" id="selModeRow" title="Works like Shift / Alt on a keyboard — handy on iPad">
+    <button type="button" class="sel-mode-btn active" data-selmode="new">New</button>
+    <button type="button" class="sel-mode-btn" data-selmode="add">➕ Add</button>
+    <button type="button" class="sel-mode-btn" data-selmode="subtract">➖ Remove</button>
+  </div>
+  <div class="mp-hint" id="mpHint">Drag a rectangle (finger or mouse) to select · ➕ Add keeps adding, ➖ Remove takes away (or hold Shift / Alt) · two fingers scroll &amp; zoom</div>
 </div>
 
 <!-- Cleanup (Stray Color) Panel -->
@@ -8416,9 +8426,9 @@ function updateMultiHint(){
     filters.push('marked stray spot');
   }
   if(filters.length){
-    hintEl.textContent=`Drag a rectangle — only ${filters.join(' + ')} cells inside it will be selected · hold Shift to add another · hold Alt to subtract`;
+    hintEl.textContent=`Drag a rectangle — only ${filters.join(' + ')} cells inside it will be selected · ➕ Add / ➖ Remove (or Shift / Alt) to build it up`;
   } else {
-    hintEl.textContent='Drag a rectangle to select · hold Shift to add another · hold Alt to subtract';
+    hintEl.textContent='Drag a rectangle (finger or mouse) to select · ➕ Add keeps adding, ➖ Remove takes away (or hold Shift / Alt) · two fingers scroll & zoom';
   }
 }
 
@@ -8471,11 +8481,50 @@ diamondCanvas.addEventListener('mousedown',e=>{
   if(!c) return;
   isSelecting=true;
   dragStartCell=c;
-  dragMode=e.shiftKey?'add':(e.altKey?'subtract':'replace');
+  dragMode=e.shiftKey?'add':(e.altKey?'subtract':(selTouchMode==='new'?'replace':selTouchMode));
   dragBaseSelection=new Set(selectedCells);
   lastSelectKey=c.key;
   updateRectSelection(c);
 });
+// ── SELECTION ON TOUCH SCREENS (iPad) ───────────────────────────────────────
+// New / ➕ Add / ➖ Remove buttons stand in for Shift / Alt. One finger drags a
+// selection box in Multi-Cell, Final Cleanup, Copy/Paste and Crop Pattern;
+// two fingers still scroll and pinch-zoom the pattern.
+var selTouchMode='new';
+document.querySelectorAll('.sel-mode-btn').forEach(b=>b.addEventListener('click',()=>{
+  selTouchMode=b.dataset.selmode;
+  document.querySelectorAll('.sel-mode-btn').forEach(x=>x.classList.toggle('active',x===b));
+}));
+(function(){
+  let touchSel=false;
+  const canSelect=()=>indices.length && (multiMode||cleanupMode||copyPasteMode||cropPatternMode) && !(copyPasteMode&&clipboard) && !(cropPatternMode&&cropPatternFixedW) && !spaceDown;
+  diamondCanvas.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1){ // second finger: hand over to scroll / zoom
+      if(touchSel){ touchSel=false; isSelecting=false; dragStartCell=null; }
+      return;
+    }
+    if(!canSelect()) return;
+    const t=e.touches[0]; const c=cellFromEvent(t); if(!c) return;
+    e.preventDefault();
+    touchSel=true; isSelecting=true; dragStartCell=c;
+    dragMode=selTouchMode==='new'?'replace':selTouchMode;
+    dragBaseSelection=new Set(selectedCells);
+    lastSelectKey=c.key;
+    updateRectSelection(c);
+  },{passive:false});
+  diamondCanvas.addEventListener('touchmove',e=>{
+    if(!touchSel) return;
+    if(e.touches.length!==1){ touchSel=false; isSelecting=false; dragStartCell=null; return; }
+    e.preventDefault();
+    const c=cellFromEvent(e.touches[0]);
+    if(!c||c.key===lastSelectKey) return;
+    lastSelectKey=c.key; updateRectSelection(c);
+  },{passive:false});
+  const end=()=>{ if(!touchSel) return; touchSel=false; isSelecting=false; dragStartCell=null; dragBaseSelection=null; lastSelectKey=-1; };
+  diamondCanvas.addEventListener('touchend',e=>{ if(touchSel&&e.touches.length===0){ e.preventDefault(); end(); } },{passive:false});
+  diamondCanvas.addEventListener('touchcancel',end);
+})();
+
 
 document.addEventListener('mousemove',e=>{
   if(cropPatternBoxDragging){
