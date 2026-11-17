@@ -529,7 +529,7 @@ body.dock-on .cleanup-panel{top:96px;bottom:84px;max-height:none;right:10px;widt
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17e</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17f</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -1232,7 +1232,7 @@ body.dock-on .cleanup-panel{top:96px;bottom:84px;max-height:none;right:10px;widt
     </div>
     <div id="plBox" style="border:1px solid var(--border,#ddd);border-radius:6px;padding:0.6rem;margin:0 0 0.8rem">
       <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">🔗 Production Line (optional)</div>
-      <div class="small-note" style="margin:0 0 0.4rem">Sends each PDF and shopping list you export to the Production Line. A small window opens; sign in there with your PIN, and keep it open while you work.</div>
+      <div class="small-note" style="margin:0 0 0.4rem">Sends each PDF, shopping list and cropped photo you export to the Production Line. A small window opens; sign in there with your PIN, and keep it open while you work.</div>
       <button class="btn btn-out" id="plLinkBtn" style="margin-top:0;width:100%">🔗 Link to Production Line</button>
       <label style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;font-size:0.75rem"><input type="checkbox" id="plAuto" checked> Send exports automatically while linked</label>
       <div class="small-note" id="plStatus" style="margin:0.4rem 0 0">Not linked.</div>
@@ -6692,6 +6692,7 @@ function doExportCroppedPhoto(region){
     a.href=URL.createObjectURL(blob);
     a.download=`${photoName}.png`;
     a.click();
+    if(typeof plSendImage==='function') plSendImage(`${photoName}.png`,blob); // also goes to the Production Line when linked
   });
 }
 
@@ -10792,6 +10793,7 @@ async function plAfterExport(label,payload){
   }catch(e){}
 }
 function plSendShoppingList(name,text){ try{ return plAfterExport('shopping list',{kind:'list',name,text}); }catch(e){} }
+function plSendImage(name,blob){ try{ if(!plLinked()) return; return plAfterExport('cropped photo',{kind:'image',name,blob}); }catch(e){} }
 function plSendPdf(name,pdf){ try{ if(!plLinked()) return; return plAfterExport('PDF',{kind:'pdf',name,blob:pdf.output('blob')}); }catch(e){} }
 
 // ── UNDO / REDO ────────────────────────────────────────────────────────────
