@@ -529,7 +529,7 @@ body.dock-on .cleanup-panel{top:96px;bottom:84px;max-height:none;right:10px;widt
   <button class="btn-out advanced-toggle-btn" id="recordBtn" title="Record a time-lapse of your canvas or a voice note, saved to a folder you choose (like one inside OneDrive)">● Record</button>
   <button class="btn-out advanced-toggle-btn" id="helpBtn" title="FAQ and tutorial videos">❓ Help</button>
   <button class="btn-out advanced-toggle-btn" id="quickBarBtn" title="Shows just your most-used tools in the sidebar. Everything else moves into a ☰ More Tools panel you can open, drag around, or move to a second monitor — same panel behavior as Upload Photo's pop-out.">⚡ Quick Bar: Off</button>
-  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-17f</span>
+  <span style="font-size:0.6rem;color:#ccc;align-self:center;white-space:nowrap" title="Confirms which copy of this file is currently running">build 2026-11-23a</span>
 </header>
 <nav class="mobile-quicknav" id="mobileQuickNav">
   <button type="button" data-target="uploadZone">📷 Photo</button>
@@ -12989,8 +12989,8 @@ updateCollapseButtons();
     const all=pages.map(p=>p.text.map(t=>t.str).join(' ')).join(' ');
     const ms=all.match(/Pattern size:\s*(\d+)\s*x\s*(\d+)/i);
     const md=all.match(/Drill size:\s*([\d.]+)\s*mm/i);
-    if(!ms){ alert('This PDF doesn\'t look like a Dotterly pattern (no "Pattern size" found).'); return; }
-    const cols=+ms[1], rows=+ms[2], fileMM=md?parseFloat(md[1]):drillMM;
+    // The cover page (pattern size, drill size) is optional — without it the grid is counted from the chart.
+    let cols=ms?+ms[1]:0, rows=ms?+ms[2]:0, fileMM=md?parseFloat(md[1]):0;
     // Color key: on "Count:" pages, a short symbol followed 4–14pt to the right by its code on the same line.
     const legend=[];
     for(const p of pages){
@@ -13024,7 +13024,22 @@ updateCollapseButtons();
     const symSet=new Set(legend.map(l=>l.sym));
     let chart=null,chartItems=[];
     for(const p of pages){ const it=p.text.filter(t=>symSet.has(t.str.trim())); if(it.length>chartItems.length){ chart=p; chartItems=it; } }
-    if(!chart||chartItems.length<cols*rows*0.3){ alert('This PDF\'s chart is split across pages or too small to read. Export the one-page color chart from Dotterly and try again.'); return; }
+    let counted=false;
+    if(chart&&(!cols||!rows)){
+      // Count drills across / down from the symbol positions (the gap between neighbors = one drill).
+      const hs=chartItems.map(t=>Math.abs(t.transform[3])||t.height).sort((u,v)=>u-v); const hMed=hs[Math.floor(hs.length/2)]||3;
+      const pts=chartItems.map(t=>{ const h=Math.abs(t.transform[3])||t.height; return [t.transform[4]+t.width/2,t.transform[5]+h*0.35]; });
+      // Group positions that sit within half a symbol of each other into one column / row, then count the groups.
+      const countAxis=vals=>{ const v=vals.slice().sort((x,y)=>x-y); let n=1; for(let i=1;i<v.length;i++) if(v[i]-v[i-1]>hMed*0.45) n++; return n; };
+      cols=countAxis(pts.map(q=>q[0])); rows=countAxis(pts.map(q=>q[1])); counted=true;
+    }
+    if(!fileMM){
+      // No drill size in the PDF: use the size in the file name ("12x16") if there is one, else round 2.8mm.
+      const mi=file.name.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+      fileMM=2.8;
+      if(mi&&cols&&rows){ const a=+mi[1],b=+mi[2]; const inW=cols>=rows?Math.max(a,b):Math.min(a,b); const mm=inW*25.4/cols; fileMM=Math.abs(mm-2.5)<Math.abs(mm-2.8)?2.5:2.8; }
+    }
+    if(!chart||!cols||!rows||chartItems.length<cols*rows*0.3){ alert('This PDF\'s chart is split across pages or too small to read. Export the one-page color chart from Dotterly and try again.'); return; }
     const r=await render(chart.pg);
     const cen=chartItems.map(t=>r.vp.convertToViewportPoint(t.transform[4]+t.width/2,t.transform[5]+(Math.abs(t.transform[3])||t.height)*0.35));
     const xs=cen.map(c=>c[0]), ys=cen.map(c=>c[1]);
@@ -13059,7 +13074,7 @@ updateCollapseButtons();
     colsEl.value=cols; rowsEl.value=rows;
     result={cols,rows,clusters,cellCl,match,blanks:0,drillMM:fileMM,fromPdf:true,title:(all.match(/^(.*?)\s+Pattern size:/i)||[])[1]||file.name};
     drawPreview(); showColors();
-    statusEl.innerHTML+=` <b>Dotterly PDF</b>: exact DMC numbers from its color key, ${fileMM}mm drills.`+(missing.length?` <span style="color:var(--red)">Not in the Studio's colors (closest used): ${missing.join(', ')}</span>`:'');
+    statusEl.innerHTML+=` <b>Dotterly PDF</b>: exact DMC numbers from its color key, ${fileMM}mm drills.`+(counted?` <span style="color:var(--muted)">(No cover page, so the Studio counted the drills from the chart${md?'':' and guessed the drill size — change it in Change Size or Drill Shape if needed'}.)</span>`:'')+(missing.length?` <span style="color:var(--red)">Not in the Studio's colors (closest used): ${missing.join(', ')}</span>`:'');
   }
   input.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
     if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)) loadPdf(f).catch(err=>{ console.error(err); alert('Sorry — that PDF could not be read.'); });
